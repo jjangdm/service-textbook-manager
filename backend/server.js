@@ -384,6 +384,42 @@ app.put('/api/books/:id/mark-paid', async (req, res) => {
   }
 });
 
+// API endpoint to delete student
+app.delete('/api/admin/students/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const student = await Student.findByPk(id, {
+      include: [{ model: Book }]
+    });
+    
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found.' });
+    }
+
+    // 해당 학생의 모든 교재도 함께 삭제
+    await Book.destroy({
+      where: { studentId: id }
+    });
+
+    // 학생 삭제
+    await student.destroy();
+
+    res.json({ 
+      message: `Student ${student.name} and all associated books have been deleted successfully.`,
+      deletedStudent: {
+        id: student.id,
+        name: student.name,
+        student_code: student.student_code
+      }
+    });
+
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({ message: 'Server error deleting student.' });
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

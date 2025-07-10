@@ -294,6 +294,43 @@ function AdminPage() {
     }
   };
 
+  // 학생 삭제
+  const handleDeleteStudent = async (studentId, studentName) => {
+    const confirmed = window.confirm(`정말로 "${studentName}" 학생과 모든 교재 정보를 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`);
+    
+    if (!confirmed) {
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/admin/students/${studentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(`학생 "${studentName}"이(가) 성공적으로 삭제되었습니다.`);
+        // 선택된 학생 초기화
+        setSelectedStudent(null);
+        setSearchQuery('');
+        setSearchResults([]);
+      } else {
+        setMessage(`오류: ${data.message}`);
+      }
+    } catch (error) {
+      setMessage('네트워크 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 로그아웃
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -445,7 +482,17 @@ function AdminPage() {
         {/* 선택된 학생 정보 */}
         {selectedStudent && (
           <div className="admin-section">
-            <h2>👤 선택된 학생: {selectedStudent.name}</h2>
+            <div className="student-header">
+              <h2>👤 선택된 학생: {selectedStudent.name}</h2>
+              <button
+                className="delete-student-button"
+                onClick={() => handleDeleteStudent(selectedStudent.id, selectedStudent.name)}
+                disabled={loading}
+                title="학생과 모든 교재 정보를 삭제합니다"
+              >
+                🗑️ 학생 삭제
+              </button>
+            </div>
             <div className="student-summary">
               <div className="summary-item">
                 <label>학생 코드:</label>
