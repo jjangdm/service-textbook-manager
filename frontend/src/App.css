@@ -24,7 +24,7 @@ body {
 /* Desktop responsiveness */
 @media (min-width: 768px) {
   .app-container {
-    max-width: 600px;
+    max-width: 800px;
     padding: 40px;
   }
 }
@@ -36,10 +36,16 @@ body {
   }
   
   .app-container {
-    max-width: 800px;
+    max-width: 1000px;
     padding: 60px;
     justify-content: flex-start;
     padding-top: 80px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .app-container {
+    max-width: 1200px;
   }
 }
 
@@ -190,6 +196,20 @@ body {
   .submit-btn {
     grid-column: 1 / -1;
     margin-top: 10px;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .book-sections-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+  }
+  
+  .book-sections-container .book-section {
+    margin-bottom: 0;
   }
 }
 
@@ -536,6 +556,27 @@ body {
   }
 }
 
+@media (min-width: 1024px) {
+  .book-item {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .book-name {
+    font-size: 17px;
+    flex: 1;
+    text-align: left;
+  }
+  
+  .book-price {
+    font-size: 17px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+}
+
 .account-info {
   background: linear-gradient(135deg, #99cc00, #7ab300);
   color: white;
@@ -580,10 +621,13 @@ body {
 
 @media (min-width: 1024px) {
   .account-info {
-    padding: 30px;
+    padding: 35px;
     border-radius: 25px;
-    margin-top: 0;
+    margin-top: 40px;
     grid-column: 1 / -1;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
   }
   
   .account-info h3 {
@@ -593,6 +637,7 @@ body {
   
   .account-details {
     font-size: 22px;
+    line-height: 1.4;
   }
 }
 
