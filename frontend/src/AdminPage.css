@@ -526,6 +526,93 @@
   cursor: not-allowed;
 }
 
+/* 검색 결과 없음 스타일 */
+.no-results {
+  padding: 15px;
+  text-align: center;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.no-results-text {
+  color: #7f8c8d;
+  margin-bottom: 10px;
+}
+
+.quick-add-button {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.quick-add-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.quick-add-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 교재 추가 섹션 (학생 정보 내부) */
+.add-book-section {
+  margin-top: 30px;
+  background: #f0f8ff;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #27ae60;
+}
+
+.add-book-section h3 {
+  margin: 0 0 20px 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+/* 미납 도서 납부 처리 스타일 */
+.book-main-info {
+  flex: 1;
+}
+
+.book-payment-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.payment-date-input {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.mark-paid-button {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.2s;
+  white-space: nowrap;
+}
+
+.mark-paid-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.mark-paid-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* 반응형 스타일 */
 @media (max-width: 768px) {
   .admin-page {

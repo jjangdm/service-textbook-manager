@@ -18,6 +18,7 @@ function AdminPage() {
     student_code: ''
   });
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showQuickAddStudent, setShowQuickAddStudent] = useState(false);
   
   // 교재 추가 관련
   const [newBook, setNewBook] = useState({
@@ -194,8 +195,8 @@ function AdminPage() {
   const handleAddStudent = async (e) => {
     e.preventDefault();
     
-    if (!newStudent.name || !newStudent.student_code) {
-      setMessage('학생 이름과 고유번호를 모두 입력해주세요.');
+    if (!newStudent.name) {
+      setMessage('학생 이름을 입력해주세요.');
       return;
     }
 
@@ -214,12 +215,75 @@ function AdminPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(`학생 "${newStudent.name}" (${newStudent.student_code})이(가) 성공적으로 추가되었습니다.`);
+        setMessage(`학생 "${newStudent.name}" (${data.student.student_code})이(가) 성공적으로 추가되었습니다.`);
         setNewStudent({
           name: '',
           student_code: ''
         });
         setShowAddStudent(false);
+      } else {
+        setMessage(`오류: ${data.message}`);
+      }
+    } catch (error) {
+      setMessage('네트워크 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 검색 결과에서 빠른 학생 추가
+  const handleQuickAddStudent = async (studentName) => {
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/admin/students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: studentName })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(`학생 "${studentName}" (${data.student.student_code})이(가) 성공적으로 추가되었습니다.`);
+        setShowQuickAddStudent(false);
+        // 새로 추가된 학생 자동 선택
+        handleStudentSelect(data.student);
+      } else {
+        setMessage(`오류: ${data.message}`);
+      }
+    } catch (error) {
+      setMessage('네트워크 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 교재 납부 처리
+  const handleMarkAsPaid = async (bookId, paymentDate) => {
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/books/${bookId}/mark-paid`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ payment_date: paymentDate })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage('납부 처리가 완료되었습니다.');
+        // 학생 정보 새로고침
+        if (selectedStudent) {
+          handleStudentSelect(selectedStudent);
+        }
       } else {
         setMessage(`오류: ${data.message}`);
       }
@@ -297,18 +361,33 @@ function AdminPage() {
               placeholder="학생 이름 또는 코드를 입력하세요"
               className="search-input"
             />
-            {searchResults.length > 0 && (
+            {searchQuery.length >= 2 && (
               <div className="search-results">
-                {searchResults.map(student => (
-                  <div
-                    key={student.id}
-                    className="search-result-item"
-                    onClick={() => handleStudentSelect(student)}
-                  >
-                    <span className="student-name">{student.name}</span>
-                    <span className="student-code">({student.student_code})</span>
+                {searchResults.length > 0 ? (
+                  searchResults.map(student => (
+                    <div
+                      key={student.id}
+                      className="search-result-item"
+                      onClick={() => handleStudentSelect(student)}
+                    >
+                      <span className="student-name">{student.name}</span>
+                      <span className="student-code">({student.student_code})</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-results">
+                    <div className="no-results-text">
+                      "{searchQuery}" 검색 결과가 없습니다.
+                    </div>
+                    <button
+                      className="quick-add-button"
+                      onClick={() => handleQuickAddStudent(searchQuery)}
+                      disabled={loading}
+                    >
+                      "{searchQuery}" 학생 추가하기
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
@@ -390,6 +469,70 @@ function AdminPage() {
               )}
             </div>
 
+            {/* 교재 추가 섹션 */}
+            <div className="add-book-section">
+              <h3>➕ 새 교재 추가</h3>
+              <form onSubmit={handleAddBook} className="add-book-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>교재명:</label>
+                    <div className="autocomplete-container">
+                      <input
+                        type="text"
+                        value={newBook.book_name}
+                        onChange={(e) => handleBookNameChange(e.target.value)}
+                        placeholder="교재명을 입력하세요 (자동완성)"
+                        required
+                      />
+                      {bookSuggestions.length > 0 && (
+                        <div className="autocomplete-results">
+                          {bookSuggestions.map((book, index) => (
+                            <div
+                              key={index}
+                              className="autocomplete-item"
+                              onClick={() => handleBookSelect(book)}
+                            >
+                              <span className="book-title">{book.book_name}</span>
+                              <span className="book-price">최근가격: {book.recent_price?.toLocaleString()}원</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>가격:</label>
+                    <input
+                      type="number"
+                      value={newBook.price}
+                      onChange={(e) => setNewBook({...newBook, price: e.target.value})}
+                      placeholder="가격을 입력하세요"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>지급일:</label>
+                    <input
+                      type="date"
+                      value={newBook.input_date}
+                      onChange={(e) => setNewBook({...newBook, input_date: e.target.value})}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="add-book-button"
+                >
+                  {loading ? '추가 중...' : '교재 추가'}
+                </button>
+              </form>
+            </div>
+
             {/* 미납 도서 상세 목록 */}
             {selectedStudent.unpaidBooks && selectedStudent.unpaidBooks.length > 0 && (
               <div className="books-section">
@@ -398,13 +541,33 @@ function AdminPage() {
                   {selectedStudent.unpaidBooks.map((book, index) => (
                     <div key={index} className="book-item unpaid-book">
                       <div className="book-info">
-                        <div className="book-title">{book.book_name}</div>
-                        <div className="book-details">
-                          <span className="book-price">{book.price?.toLocaleString()}원</span>
-                          <span className="book-date">지급일: {book.input_date}</span>
-                          {book.checking && (
-                            <span className="book-status checking">확인됨</span>
-                          )}
+                        <div className="book-main-info">
+                          <div className="book-title">{book.book_name}</div>
+                          <div className="book-details">
+                            <span className="book-price">{book.price?.toLocaleString()}원</span>
+                            <span className="book-date">지급일: {book.input_date}</span>
+                            {book.checking && (
+                              <span className="book-status checking">확인됨</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="book-payment-controls">
+                          <input
+                            type="date"
+                            defaultValue={new Date().toISOString().split('T')[0]}
+                            className="payment-date-input"
+                            id={`payment-date-${book.id}`}
+                          />
+                          <button
+                            className="mark-paid-button"
+                            onClick={() => {
+                              const paymentDate = document.getElementById(`payment-date-${book.id}`).value;
+                              handleMarkAsPaid(book.id, paymentDate);
+                            }}
+                            disabled={loading}
+                          >
+                            납부완료
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -441,84 +604,11 @@ function AdminPage() {
           </div>
         )}
 
-        {/* 교재 추가 섹션 */}
-        <div className="admin-section">
-          <h2>➕ 새 교재 추가</h2>
-          {!selectedStudent && (
-            <div className="info-message">
-              학생을 먼저 선택해주세요.
-            </div>
-          )}
-          
-          <form onSubmit={handleAddBook} className="add-book-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label>교재명:</label>
-                <div className="autocomplete-container">
-                  <input
-                    type="text"
-                    value={newBook.book_name}
-                    onChange={(e) => handleBookNameChange(e.target.value)}
-                    placeholder="교재명을 입력하세요 (자동완성)"
-                    required
-                    disabled={!selectedStudent}
-                  />
-                  {bookSuggestions.length > 0 && (
-                    <div className="autocomplete-results">
-                      {bookSuggestions.map((book, index) => (
-                        <div
-                          key={index}
-                          className="autocomplete-item"
-                          onClick={() => handleBookSelect(book)}
-                        >
-                          <span className="book-title">{book.book_name}</span>
-                          <span className="book-price">최근가격: {book.recent_price?.toLocaleString()}원</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label>가격:</label>
-                <input
-                  type="number"
-                  value={newBook.price}
-                  onChange={(e) => setNewBook({...newBook, price: e.target.value})}
-                  placeholder="가격을 입력하세요"
-                  required
-                  disabled={!selectedStudent}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>지급일:</label>
-                <input
-                  type="date"
-                  value={newBook.input_date}
-                  onChange={(e) => setNewBook({...newBook, input_date: e.target.value})}
-                  required
-                  disabled={!selectedStudent}
-                />
-              </div>
-            </div>
-            
-            <button 
-              type="submit" 
-              disabled={loading || !selectedStudent} 
-              className="add-book-button"
-            >
-              {loading ? '추가 중...' : '교재 추가'}
-            </button>
-          </form>
-
-          {message && (
-            <div className={`admin-message ${message.includes('오류') ? 'error' : 'success'}`}>
-              {message}
-            </div>
-          )}
-        </div>
+        {message && (
+          <div className={`admin-message ${message.includes('오류') ? 'error' : 'success'}`}>
+            {message}
+          </div>
+        )}
       </div>
     </div>
   );

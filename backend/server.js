@@ -295,34 +295,92 @@ app.get('/api/admin/books/search', async (req, res) => {
 app.post('/api/admin/students', async (req, res) => {
   const { name, student_code } = req.body;
   
-  if (!name || !student_code) {
-    return res.status(400).json({ message: 'Student name and code are required.' });
+  if (!name) {
+    return res.status(400).json({ message: 'Student name is required.' });
   }
 
   try {
-    // 중복 학생 코드 확인
-    const existingStudent = await Student.findOne({
-      where: { student_code }
-    });
+    let finalStudentCode = student_code;
+    
+    // 학생 코드가 제공되지 않은 경우 자동 생성
+    if (!finalStudentCode) {
+      // 현재 시간 기반으로 8자리 고유번호 생성
+      const timestamp = Date.now().toString();
+      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      finalStudentCode = (timestamp.slice(-5) + randomNum).slice(0, 8);
+      
+      // 중복 검사 및 재생성
+      let isUnique = false;
+      let attempts = 0;
+      while (!isUnique && attempts < 10) {
+        const existing = await Student.findOne({ where: { student_code: finalStudentCode } });
+        if (!existing) {
+          isUnique = true;
+        } else {
+          const newRandomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+          finalStudentCode = (timestamp.slice(-4) + newRandomNum).slice(0, 8);
+          attempts++;
+        }
+      }
+    } else {
+      // 제공된 학생 코드 중복 확인
+      const existingStudent = await Student.findOne({
+        where: { student_code: finalStudentCode }
+      });
 
-    if (existingStudent) {
-      return res.status(400).json({ message: 'Student with this code already exists.' });
+      if (existingStudent) {
+        return res.status(400).json({ message: 'Student with this code already exists.' });
+      }
     }
 
     // 새 학생 생성
     const newStudent = await Student.create({
       name,
-      student_code
+      student_code: finalStudentCode
     });
 
     res.json({
       success: true,
-      message: `Student ${name} (${student_code}) has been added successfully.`,
+      message: `Student ${name} (${finalStudentCode}) has been added successfully.`,
       student: newStudent
     });
   } catch (error) {
     console.error('Error adding new student:', error);
     res.status(500).json({ message: 'Server error adding new student.' });
+  }
+});
+
+// API endpoint to mark book as paid
+app.put('/api/books/:id/mark-paid', async (req, res) => {
+  const { id } = req.params;
+  const { payment_date } = req.body;
+
+  try {
+    const book = await Book.findByPk(id);
+    
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found.' });
+    }
+
+    // 납부 완료로 처리
+    book.payment_date = payment_date || new Date().toISOString().split('T')[0];
+    book.checking = true;
+    await book.save();
+
+    res.json({ 
+      message: 'Book marked as paid successfully.',
+      book: {
+        id: book.id,
+        book_name: book.book_name,
+        price: book.price,
+        checking: book.checking,
+        payment_date: book.payment_date
+      }
+    });
+
+  } catch (error) {
+    console.error('Error marking book as paid:', error);
+    res.status(500).json({ message: 'Server error marking book as paid.' });
   }
 });
 
