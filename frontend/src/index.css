@@ -1,13 +1,132 @@
+/* 깔끔한 기본 스타일 - Google Material 느낌 */
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Malgun Gothic', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #f5f6fa;
+  color: #2f3640;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+  background: rgba(153, 204, 0, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #2f3640;
+}
+
+/* 전역 스크롤바 스타일 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f3f4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dadce0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #99cc00;
+}
+
+/* 선택 텍스트 스타일 */
+::selection {
+  background: rgba(153, 204, 0, 0.2);
+  color: #2f3640;
+}
+
+::-moz-selection {
+  background: rgba(153, 204, 0, 0.2);
+  color: #2f3640;
+}
+
+/* 포커스 스타일 */
+:focus {
+  outline: 2px solid #99cc00;
+  outline-offset: 2px;
+}
+
+/* 기본 링크 스타일 */
+a {
+  color: #99cc00;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #7aa600;
+  text-decoration: underline;
+}
+
+/* 기본 버튼 스타일 */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 기본 입력 필드 스타일 */
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: #2f3640;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9aa0a6;
+}
+
+/* 반응형 이미지 */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 기본 제목 스타일 */
+h1, h2, h3, h4, h5, h6 {
+  color: #2f3640;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* 기본 문단 스타일 */
+p {
+  margin-bottom: 16px;
+  color: #5f6368;
+}
+
+/* 태블릿 이상 (768px+) */
+@media (min-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+}
+
+/* 데스크탑 이상 (1024px+) */
+@media (min-width: 1024px) {
+  body {
+    font-size: 16px;
+  }
 }

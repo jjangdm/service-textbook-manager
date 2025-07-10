@@ -46,41 +46,223 @@ app.get('/api/student-info', async (req, res) => {
   const { student_code, name } = req.query;
 
   if (!student_code || !name) {
-    return res.status(400).json({ message: 'Student code and name are required.' });
+    return res.status(400).json({ 
+      error: 'Student code and name are required.',
+      message: 'Student code and name are required.' 
+    });
   }
 
   try {
+    console.log(`🔍 학생 정보 조회: ${name} (${student_code})`);
+    
     const student = await Student.findOne({
       where: { student_code, name },
-      include: [{ model: Book }],
+      include: [{ 
+        model: Book,
+        order: [['input_date', 'DESC']]
+      }],
     });
 
     if (!student) {
-      return res.status(404).json({ message: 'Student not found.' });
+      console.log(`❌ 학생을 찾을 수 없음: ${name} (${student_code})`);
+      return res.status(404).json({ 
+        error: 'Student not found.',
+        message: 'Student not found.' 
+      });
     }
 
     // checking 필드와 payment_date 모두 고려하여 납부 여부 판단
     const unpaidBooks = student.Books.filter(book => 
-      (book.checking === false || book.checking === 0) && 
-      (!book.payment_date || book.payment_date === null)
+      (book.checking === false || book.checking === 0 || book.checking === null) && 
+      (!book.payment_date || book.payment_date === null || book.payment_date === '')
     );
+    
     const paidBooks = student.Books.filter(book => 
       (book.checking === true || book.checking === 1) || 
-      (book.payment_date && book.payment_date !== null)
+      (book.payment_date && book.payment_date !== null && book.payment_date !== '')
     );
+    
     const totalUnpaidAmount = unpaidBooks.reduce((sum, book) => sum + book.price, 0);
+
+    console.log(`📊 ${name}: 미납 ${unpaidBooks.length}권(${totalUnpaidAmount.toLocaleString()}원), 납부 ${paidBooks.length}권`);
 
     res.json({
       studentName: student.name,
-      unpaidBooks,
-      paidBooks,
+      studentCode: student.student_code,
+      unpaidBooks: unpaidBooks.map(book => ({
+        id: book.id,
+        book_name: book.book_name,
+        price: book.price,
+        input_date: book.input_date,
+        checking: book.checking,
+        payment_date: book.payment_date
+      })),
+      paidBooks: paidBooks.map(book => ({
+        id: book.id,
+        book_name: book.book_name,
+        price: book.price,
+        input_date: book.input_date,
+        checking: book.checking,
+        payment_date: book.payment_date
+      })),
       totalUnpaidAmount,
-      accountInfo: '국민은행 123-456789-01-234 (예금주: 홍길동)' // Example account info
+      accountInfo: '신한은행 110-247-214359 장동민(엠클래스수학과학전문학원)'
     });
 
   } catch (error) {
-    console.error('Error fetching student info:', error);
-    res.status(500).json({ message: 'Server error.' });
+    console.error(`💥 학생 정보 조회 오류 (${name}):`, error);
+    res.status(500).json({ 
+      error: 'Server error.',
+      message: 'Server error.' 
+    });
+  }
+});
+
+// API endpoint to get total unpaid amount from all students
+app.get('/api/admin/total-unpaid', async (req, res) => {
+  try {
+    console.log('📊 총 미납액 계산 시작...');
+    
+    // 미납 도서의 총 금액 계산
+    // checking이 false이고 payment_date가 null인 경우를 미납으로 간주
+    const totalUnpaid = await Book.sum('price', {
+      where: {
+        [Op.and]: [
+          { checking: { [Op.or]: [false, 0, null] } },
+          { payment_date: { [Op.or]: [null, ''] } }
+        ]
+      }
+    });
+
+    const actualTotal = totalUnpaid || 0;
+    console.log(`💰 계산된 총 미납액: ${actualTotal.toLocaleString()}원`);
+
+    // 추가 정보: 미납 도서 수와 미납 학생 수도 함께 제공
+    const unpaidBooksCount = await Book.count({
+      where: {
+        [Op.and]: [
+          { checking: { [Op.or]: [false, 0, null] } },
+          { payment_date: { [Op.or]: [null, ''] } }
+        ]
+      }
+    });
+
+    const studentsWithUnpaidBooks = await Student.count({
+      include: [{
+        model: Book,
+        where: {
+          [Op.and]: [
+            { checking: { [Op.or]: [false, 0, null] } },
+            { payment_date: { [Op.or]: [null, ''] } }
+          ]
+        },
+        required: true // INNER JOIN to only count students with unpaid books
+      }]
+    });
+
+    res.json({
+      success: true,
+      totalUnpaidAmount: actualTotal,
+      unpaidBooksCount: unpaidBooksCount,
+      studentsWithUnpaidBooks: studentsWithUnpaidBooks,
+      message: `총 ${studentsWithUnpaidBooks}명의 학생이 ${unpaidBooksCount}권의 미납 도서를 보유하고 있습니다.`
+    });
+
+  } catch (error) {
+    console.error('💥 총 미납액 계산 오류:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      totalUnpaidAmount: 0,
+      unpaidBooksCount: 0,
+      studentsWithUnpaidBooks: 0
+    });
+  }
+});
+
+// API endpoint to get all students (for admin dashboard)
+app.get('/api/admin/students/all', async (req, res) => {
+  try {
+    console.log('👥 전체 학생 목록 조회...');
+    
+    const students = await Student.findAll({
+      attributes: ['id', 'name', 'student_code'],
+      order: [['name', 'ASC']]
+    });
+
+    console.log(`📋 총 ${students.length}명의 학생 조회 완료`);
+
+    res.json({
+      success: true,
+      students: students,
+      totalCount: students.length
+    });
+
+  } catch (error) {
+    console.error('💥 학생 목록 조회 오류:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      students: [],
+      totalCount: 0
+    });
+  }
+});
+
+// API endpoint to delete student and all their books
+app.delete('/api/admin/students/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    console.log(`🗑️ 학생 삭제 요청: ID ${id}`);
+    
+    // 학생 정보 먼저 조회
+    const student = await Student.findByPk(id, {
+      include: [{ model: Book }]
+    });
+
+    if (!student) {
+      console.log(`❌ 삭제할 학생을 찾을 수 없음: ID ${id}`);
+      return res.status(404).json({ 
+        success: false,
+        message: 'Student not found.' 
+      });
+    }
+
+    const studentName = student.name;
+    const studentCode = student.student_code;
+    const booksCount = student.Books.length;
+
+    // 먼저 해당 학생의 모든 도서 삭제
+    await Book.destroy({
+      where: { studentId: id }
+    });
+
+    // 그 다음 학생 삭제
+    await student.destroy();
+
+    console.log(`✅ 학생 삭제 완료: ${studentName} (${studentCode}) - ${booksCount}권의 도서도 함께 삭제됨`);
+
+    res.json({
+      success: true,
+      message: `학생 "${studentName}" (${studentCode})과 관련된 ${booksCount}권의 도서가 모두 삭제되었습니다.`,
+      deleted: true,
+      deletedStudent: {
+        id: id,
+        name: studentName,
+        student_code: studentCode
+      },
+      deletedBooksCount: booksCount
+    });
+
+  } catch (error) {
+    console.error(`💥 학생 삭제 오류 (ID: ${id}):`, error);
+    res.status(500).json({ 
+      success: false,
+      deleted: false,
+      error: error.message,
+      message: 'Server error deleting student.' 
+    });
   }
 });
 
@@ -300,20 +482,6 @@ app.post('/api/admin/students', async (req, res) => {
   }
 
   try {
-    // 이름으로 중복 검사 (대소문자 무시)
-    const existingStudentByName = await Student.findOne({
-      where: sequelize.where(
-        sequelize.fn('LOWER', sequelize.col('name')),
-        sequelize.fn('LOWER', name.trim())
-      )
-    });
-
-    if (existingStudentByName) {
-      return res.status(400).json({ 
-        message: `Student with name "${name}" already exists with code ${existingStudentByName.student_code}.` 
-      });
-    }
-
     let finalStudentCode = student_code;
     
     // 학생 코드가 제공되지 않은 경우 자동 생성
@@ -349,7 +517,7 @@ app.post('/api/admin/students', async (req, res) => {
 
     // 새 학생 생성
     const newStudent = await Student.create({
-      name: name.trim(),
+      name,
       student_code: finalStudentCode
     });
 
@@ -395,42 +563,6 @@ app.put('/api/books/:id/mark-paid', async (req, res) => {
   } catch (error) {
     console.error('Error marking book as paid:', error);
     res.status(500).json({ message: 'Server error marking book as paid.' });
-  }
-});
-
-// API endpoint to delete student
-app.delete('/api/admin/students/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const student = await Student.findByPk(id, {
-      include: [{ model: Book }]
-    });
-    
-    if (!student) {
-      return res.status(404).json({ message: 'Student not found.' });
-    }
-
-    // 해당 학생의 모든 교재도 함께 삭제
-    await Book.destroy({
-      where: { studentId: id }
-    });
-
-    // 학생 삭제
-    await student.destroy();
-
-    res.json({ 
-      message: `Student ${student.name} and all associated books have been deleted successfully.`,
-      deletedStudent: {
-        id: student.id,
-        name: student.name,
-        student_code: student.student_code
-      }
-    });
-
-  } catch (error) {
-    console.error('Error deleting student:', error);
-    res.status(500).json({ message: 'Server error deleting student.' });
   }
 });
 

@@ -1,272 +1,329 @@
+/* 깔끔한 관리자 패널 - 로그인 폼 스타일 */
+
 .admin-panel-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(95, 99, 104, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .admin-panel {
-  background-color: white;
-  border-radius: 8px;
-  padding: 30px;
-  max-width: 800px;
+  background: white;
+  border-radius: 16px;
+  padding: 32px 24px;
+  max-width: 400px;
+  width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid #e8eaed;
 }
 
 .admin-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  border-bottom: 2px solid #3498db;
-  padding-bottom: 10px;
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .admin-panel-header h2 {
   margin: 0;
-  color: #2c3e50;
+  color: #2f3640;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
-  color: #7f8c8d;
-  padding: 0;
-  width: 30px;
-  height: 30px;
+  color: #70757a;
+  padding: 8px;
+  width: 36px;
+  height: 36px;
   display: flex;
   justify-content: center;
   align-items: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
 
 .close-button:hover {
-  color: #e74c3c;
+  background: #f1f3f4;
+  color: #ea4335;
 }
 
 .admin-message {
-  padding: 10px 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-  font-weight: bold;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-weight: 500;
+  font-size: 14px;
+  text-align: center;
 }
 
 .admin-message.success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #99cc00;
 }
 
 .admin-message.error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: #fde7e7;
+  color: #c5221f;
+  border: 1px solid #ea4335;
 }
 
 .admin-section {
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 
 .admin-section h3 {
-  color: #34495e;
-  margin-bottom: 15px;
-  font-size: 1.3rem;
+  color: #2f3640;
+  margin-bottom: 20px;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
 }
 
 .books-management {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
 }
 
 .book-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+  background: white;
+  border: 1px solid #e8eaed;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.book-item:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border-color: #dadce0;
 }
 
 .book-item.paid {
-  background-color: #d4edda;
-  border-color: #27ae60;
+  background: #f0f8f0;
+  border-color: #99cc00;
 }
 
 .book-item.unpaid {
-  background-color: #f8d7da;
-  border-color: #e74c3c;
+  background: #fef7f7;
+  border-color: #ea4335;
 }
 
 .book-info {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  flex: 1;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .book-name {
-  font-weight: bold;
-  font-size: 1.1rem;
+  font-weight: 600;
+  font-size: 16px;
+  color: #2f3640;
 }
 
 .book-price {
-  color: #7f8c8d;
-  font-size: 1rem;
+  color: #70757a;
+  font-size: 14px;
 }
 
 .book-status {
-  font-size: 0.9rem;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
   display: inline-block;
   width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .book-status.paid {
-  background-color: #27ae60;
+  background: #99cc00;
   color: white;
 }
 
 .book-status.unpaid {
-  background-color: #e74c3c;
+  background: #ea4335;
   color: white;
 }
 
 .payment-date {
-  font-size: 0.9rem;
-  color: #7f8c8d;
+  font-size: 12px;
+  color: #70757a;
 }
 
 .book-actions {
   display: flex;
-  gap: 10px;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
 .toggle-payment, .delete-book {
-  padding: 8px 15px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  flex: 1;
 }
 
 .toggle-payment.mark-paid {
-  background-color: #27ae60;
+  background: #99cc00;
   color: white;
 }
 
 .toggle-payment.mark-paid:hover {
-  background-color: #219a52;
+  background: #7aa600;
+  transform: translateY(-1px);
 }
 
 .toggle-payment.mark-unpaid {
-  background-color: #e67e22;
+  background: #fbbc04;
   color: white;
 }
 
 .toggle-payment.mark-unpaid:hover {
-  background-color: #d35400;
+  background: #ea8600;
+  transform: translateY(-1px);
 }
 
 .delete-book {
-  background-color: #e74c3c;
+  background: #ea4335;
   color: white;
 }
 
 .delete-book:hover {
-  background-color: #c0392b;
+  background: #d93025;
+  transform: translateY(-1px);
 }
 
 .toggle-payment:disabled, .delete-book:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .add-book-form {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e8eaed;
 }
 
 .add-book-form .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .add-book-form label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #2c3e50;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #2f3640;
+  font-size: 14px;
 }
 
 .add-book-form input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
+  padding: 14px 16px;
+  border: 1px solid #dadce0;
+  border-radius: 12px;
+  font-size: 14px;
   box-sizing: border-box;
+  transition: all 0.2s ease;
+  background: white;
+  color: #2f3640;
+}
+
+.add-book-form input::placeholder {
+  color: #9aa0a6;
 }
 
 .add-book-form input:focus {
-  border-color: #3498db;
+  border-color: #99cc00;
   outline: none;
+  box-shadow: 0 0 0 2px rgba(153, 204, 0, 0.1);
 }
 
 .add-book-button {
-  background-color: #3498db;
+  background: #99cc00;
   color: white;
-  padding: 12px 25px;
+  padding: 14px 24px;
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.2s ease;
+  width: 100%;
 }
 
 .add-book-button:hover {
-  background-color: #2980b9;
+  background: #7aa600;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(153, 204, 0, 0.3);
 }
 
 .add-book-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
-@media (max-width: 768px) {
+/* 태블릿 이상 (768px+) */
+@media (min-width: 768px) {
   .admin-panel {
-    padding: 20px;
-    width: 95%;
+    padding: 40px 32px;
+    max-width: 500px;
+  }
+  
+  .admin-panel-header h2 {
+    font-size: 22px;
   }
   
   .book-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    padding: 24px;
+  }
+  
+  .book-info {
+    margin-bottom: 20px;
+  }
+  
+  .book-name {
+    font-size: 18px;
   }
   
   .book-actions {
-    width: 100%;
-    justify-content: space-between;
+    gap: 12px;
   }
   
   .toggle-payment, .delete-book {
-    flex: 1;
-    max-width: 48%;
+    font-size: 13px;
+    padding: 12px 20px;
+  }
+}
+
+/* 데스크탑 이상 (1024px+) */
+@media (min-width: 1024px) {
+  .admin-panel {
+    max-width: 600px;
   }
 }
