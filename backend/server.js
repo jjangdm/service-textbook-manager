@@ -1,4 +1,5 @@
 const express = require('express');
+const { Op } = require('sequelize');
 const sequelize = require('./config/database');
 const Student = require('./models/student');
 const Book = require('./models/book');
@@ -173,6 +174,120 @@ app.delete('/api/books/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting book:', error);
     res.status(500).json({ message: 'Server error deleting book.' });
+  }
+});
+
+// Admin authentication endpoint
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  
+  // 간단한 비밀번호 인증 (실제 운영시에는 더 복잡한 인증 필요)
+  const adminPassword = 'admin123'; // 나중에 환경변수로 관리
+  
+  if (password === adminPassword) {
+    res.json({ 
+      success: true, 
+      message: 'Authentication successful',
+      token: 'admin-token-' + Date.now() // 간단한 토큰
+    });
+  } else {
+    res.status(401).json({ 
+      success: false, 
+      message: 'Invalid password' 
+    });
+  }
+});
+
+// API endpoint to search students
+app.get('/api/admin/students/search', async (req, res) => {
+  const { query } = req.query;
+  
+  if (!query || query.length < 2) {
+    return res.status(400).json({ message: 'Search query must be at least 2 characters.' });
+  }
+
+  try {
+    const students = await Student.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.like]: `%${query}%` } },
+          { student_code: { [Op.like]: `%${query}%` } }
+        ]
+      },
+      limit: 20
+    });
+
+    res.json(students);
+  } catch (error) {
+    console.error('Error searching students:', error);
+    res.status(500).json({ message: 'Server error searching students.' });
+  }
+});
+
+// API endpoint to get book price history
+app.get('/api/admin/books/price-history', async (req, res) => {
+  const { book_name } = req.query;
+  
+  if (!book_name) {
+    return res.status(400).json({ message: 'Book name is required.' });
+  }
+
+  try {
+    // 해당 교재의 가장 최근 가격 조회
+    const recentBook = await Book.findOne({
+      where: { 
+        book_name: { [Op.like]: `%${book_name}%` }
+      },
+      order: [['input_date', 'DESC']]
+    });
+
+    if (recentBook) {
+      res.json({ 
+        book_name: recentBook.book_name,
+        recent_price: recentBook.price,
+        input_date: recentBook.input_date
+      });
+    } else {
+      res.json({ 
+        book_name: book_name,
+        recent_price: null,
+        input_date: null
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching book price history:', error);
+    res.status(500).json({ message: 'Server error fetching price history.' });
+  }
+});
+
+// API endpoint to search book names for autocomplete
+app.get('/api/admin/books/search', async (req, res) => {
+  const { query } = req.query;
+  
+  if (!query || query.length < 2) {
+    return res.json([]);
+  }
+
+  try {
+    const books = await Book.findAll({
+      attributes: ['book_name', 'price'],
+      where: {
+        book_name: { [Op.like]: `%${query}%` }
+      },
+      group: ['book_name'],
+      order: [['input_date', 'DESC']],
+      limit: 10
+    });
+
+    const uniqueBooks = books.map(book => ({
+      book_name: book.book_name,
+      recent_price: book.price
+    }));
+
+    res.json(uniqueBooks);
+  } catch (error) {
+    console.error('Error searching books:', error);
+    res.status(500).json({ message: 'Server error searching books.' });
   }
 });
 

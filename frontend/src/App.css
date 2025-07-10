@@ -17,6 +17,30 @@
   margin-bottom: 20px;
 }
 
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h1 {
+  margin: 0;
+}
+
+.admin-link {
+  color: #61dafb;
+  text-decoration: none;
+  padding: 8px 16px;
+  border: 1px solid #61dafb;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.admin-link:hover {
+  background-color: #61dafb;
+  color: #282c34;
+}
+
 .App-main {
   padding: 20px;
 }

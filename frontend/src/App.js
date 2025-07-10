@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import AdminPanel from './AdminPanel';
+import AdminPage from './AdminPage';
 
-function App() {
+function StudentLookup() {
   const [studentCode, setStudentCode] = useState('');
   const [studentName, setStudentName] = useState('');
   const [studentInfo, setStudentInfo] = useState(null);
@@ -23,7 +25,7 @@ function App() {
       if (response.ok) {
         setStudentInfo({
           ...data,
-          studentCode: studentCode // 관리자 패널에서 사용하기 위해 추가
+          studentCode: studentCode
         });
       } else {
         setError(data.message || 'Failed to fetch student information.');
@@ -59,7 +61,10 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>교재 미납/납부 조회</h1>
+        <div className="header-content">
+          <h1>교재 미납/납부 조회</h1>
+          <Link to="/admin" className="admin-link">관리자 페이지</Link>
+        </div>
       </header>
       <main className="App-main">
         <form onSubmit={handleSubmit} className="student-form">
@@ -137,16 +142,27 @@ function App() {
             </div>
           </div>
         )}
-      </main>
 
-      {showAdminPanel && studentInfo && (
-        <AdminPanel
-          studentInfo={studentInfo}
-          onUpdate={refreshStudentInfo}
-          onClose={() => setShowAdminPanel(false)}
-        />
-      )}
+        {showAdminPanel && studentInfo && (
+          <AdminPanel
+            studentInfo={studentInfo}
+            onUpdate={refreshStudentInfo}
+            onClose={() => setShowAdminPanel(false)}
+          />
+        )}
+      </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<StudentLookup />} />
+        <Route path="/admin" element={<AdminPage />} />
+      </Routes>
+    </Router>
   );
 }
 
