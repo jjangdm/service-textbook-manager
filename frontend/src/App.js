@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import AdminPanel from './AdminPanel';
 import AdminPage from './AdminPage';
 
 function StudentLookup() {
@@ -10,7 +9,6 @@ function StudentLookup() {
   const [studentInfo, setStudentInfo] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,33 +36,10 @@ function StudentLookup() {
     }
   };
 
-  const refreshStudentInfo = async () => {
-    if (studentCode && studentName) {
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/student-info?student_code=${studentCode}&name=${studentName}`);
-        const data = await response.json();
-        if (response.ok) {
-          setStudentInfo({
-            ...data,
-            studentCode: studentCode
-          });
-        }
-      } catch (error) {
-        console.error('Refresh error:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
   return (
     <div className="App">
       <header className="App-header">
-        <div className="header-content">
-          <h1>교재 미납/납부 조회</h1>
-          <Link to="/admin" className="admin-link">관리자 페이지</Link>
-        </div>
+        <h1>교재 미납/납부 조회</h1>
       </header>
       <main className="App-main">
         <form onSubmit={handleSubmit} className="student-form">
@@ -99,12 +74,6 @@ function StudentLookup() {
           <div className="student-info-card">
             <div className="student-header">
               <h2>{studentInfo.studentName} 학생 정보</h2>
-              <button 
-                onClick={() => setShowAdminPanel(true)}
-                className="admin-button"
-              >
-                관리자 모드
-              </button>
             </div>
             <div className="info-section">
               <h3>미납 금액: <span className="unpaid-amount">{studentInfo.totalUnpaidAmount.toLocaleString()}원</span></h3>
@@ -142,14 +111,6 @@ function StudentLookup() {
             </div>
           </div>
         )}
-
-        {showAdminPanel && studentInfo && (
-          <AdminPanel
-            studentInfo={studentInfo}
-            onUpdate={refreshStudentInfo}
-            onClose={() => setShowAdminPanel(false)}
-          />
-        )}
       </main>
     </div>
   );
@@ -160,7 +121,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<StudentLookup />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/secret-admin" element={<AdminPage />} />
       </Routes>
     </Router>
   );

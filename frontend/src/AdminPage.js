@@ -12,6 +12,13 @@ function AdminPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   
+  // 새 학생 추가 관련
+  const [newStudent, setNewStudent] = useState({
+    name: '',
+    student_code: ''
+  });
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  
   // 교재 추가 관련
   const [newBook, setNewBook] = useState({
     book_name: '',
@@ -183,6 +190,46 @@ function AdminPage() {
     }
   };
 
+  // 새 학생 추가
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    
+    if (!newStudent.name || !newStudent.student_code) {
+      setMessage('학생 이름과 고유번호를 모두 입력해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/admin/students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newStudent)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(`학생 "${newStudent.name}" (${newStudent.student_code})이(가) 성공적으로 추가되었습니다.`);
+        setNewStudent({
+          name: '',
+          student_code: ''
+        });
+        setShowAddStudent(false);
+      } else {
+        setMessage(`오류: ${data.message}`);
+      }
+    } catch (error) {
+      setMessage('네트워크 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 로그아웃
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -267,6 +314,55 @@ function AdminPage() {
           </div>
         </div>
 
+        {/* 새 학생 추가 섹션 */}
+        <div className="admin-section">
+          <div className="section-header">
+            <h2>👤 새 학생 추가</h2>
+            <button 
+              onClick={() => setShowAddStudent(!showAddStudent)}
+              className="toggle-button"
+            >
+              {showAddStudent ? '닫기' : '학생 추가'}
+            </button>
+          </div>
+          
+          {showAddStudent && (
+            <form onSubmit={handleAddStudent} className="add-student-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>학생 이름:</label>
+                  <input
+                    type="text"
+                    value={newStudent.name}
+                    onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
+                    placeholder="학생 이름을 입력하세요"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>학생 고유번호:</label>
+                  <input
+                    type="text"
+                    value={newStudent.student_code}
+                    onChange={(e) => setNewStudent({...newStudent, student_code: e.target.value})}
+                    placeholder="학생 고유번호를 입력하세요"
+                    required
+                  />
+                </div>
+                
+                <button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="add-student-button"
+                >
+                  {loading ? '추가 중...' : '학생 추가'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
         {/* 선택된 학생 정보 */}
         {selectedStudent && (
           <div className="admin-section">
@@ -293,6 +389,55 @@ function AdminPage() {
                 </>
               )}
             </div>
+
+            {/* 미납 도서 상세 목록 */}
+            {selectedStudent.unpaidBooks && selectedStudent.unpaidBooks.length > 0 && (
+              <div className="books-section">
+                <h3>📋 미납 도서 목록 ({selectedStudent.unpaidBooks.length}권)</h3>
+                <div className="books-list">
+                  {selectedStudent.unpaidBooks.map((book, index) => (
+                    <div key={index} className="book-item unpaid-book">
+                      <div className="book-info">
+                        <div className="book-title">{book.book_name}</div>
+                        <div className="book-details">
+                          <span className="book-price">{book.price?.toLocaleString()}원</span>
+                          <span className="book-date">지급일: {book.input_date}</span>
+                          {book.checking && (
+                            <span className="book-status checking">확인됨</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 납부 도서 상세 목록 */}
+            {selectedStudent.paidBooks && selectedStudent.paidBooks.length > 0 && (
+              <div className="books-section">
+                <h3>✅ 납부 완료 도서 목록 ({selectedStudent.paidBooks.length}권)</h3>
+                <div className="books-list">
+                  {selectedStudent.paidBooks.map((book, index) => (
+                    <div key={index} className="book-item paid-book">
+                      <div className="book-info">
+                        <div className="book-title">{book.book_name}</div>
+                        <div className="book-details">
+                          <span className="book-price">{book.price?.toLocaleString()}원</span>
+                          <span className="book-date">지급일: {book.input_date}</span>
+                          {book.payment_date && (
+                            <span className="book-payment">납부일: {book.payment_date}</span>
+                          )}
+                          {book.checking && (
+                            <span className="book-status checking">확인됨</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

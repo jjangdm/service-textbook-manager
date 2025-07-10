@@ -298,6 +298,111 @@
   color: #2c3e50;
 }
 
+/* 도서 목록 스타일 */
+.books-section {
+  margin-top: 30px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+
+.books-section h3 {
+  margin: 0 0 20px 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.books-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.book-item {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.book-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.unpaid-book {
+  border-left-color: #e74c3c;
+  background: linear-gradient(135deg, #ffffff 0%, #fff5f5 100%);
+}
+
+.paid-book {
+  border-left-color: #27ae60;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fff8 100%);
+}
+
+.book-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.book-title {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  line-height: 1.3;
+}
+
+.book-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.book-price {
+  color: #27ae60;
+  font-weight: bold;
+  background: #e8f5e8;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.book-date, .book-payment {
+  color: #7f8c8d;
+  background: #ecf0f1;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.book-payment {
+  color: #27ae60;
+  background: #e8f5e8;
+}
+
+.book-status.checking {
+  color: #3498db;
+  background: #e8f4fd;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+/* 교재명 입력 필드 폭 확대 */
+.form-row {
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr; /* 교재명 필드를 3배로 확대 */
+  gap: 20px;
+  align-items: end;
+}
+
+.autocomplete-container input {
+  min-width: 450px; /* 최소 폭을 더 크게 설정 */
+  width: 100%;
+}
+
 .book-price {
   color: #27ae60;
   font-size: 12px;
@@ -360,6 +465,65 @@
   border-radius: 6px;
   margin: 10px 0;
   text-align: center;
+}
+
+/* 학생 추가 섹션 스타일 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.toggle-button {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.toggle-button:hover {
+  transform: translateY(-1px);
+}
+
+.add-student-form {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+  margin-top: 15px;
+}
+
+.add-student-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.add-student-button {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  white-space: nowrap;
+}
+
+.add-student-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.add-student-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 반응형 스타일 */

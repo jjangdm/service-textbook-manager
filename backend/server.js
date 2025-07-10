@@ -291,6 +291,41 @@ app.get('/api/admin/books/search', async (req, res) => {
   }
 });
 
+// API endpoint to add new student
+app.post('/api/admin/students', async (req, res) => {
+  const { name, student_code } = req.body;
+  
+  if (!name || !student_code) {
+    return res.status(400).json({ message: 'Student name and code are required.' });
+  }
+
+  try {
+    // 중복 학생 코드 확인
+    const existingStudent = await Student.findOne({
+      where: { student_code }
+    });
+
+    if (existingStudent) {
+      return res.status(400).json({ message: 'Student with this code already exists.' });
+    }
+
+    // 새 학생 생성
+    const newStudent = await Student.create({
+      name,
+      student_code
+    });
+
+    res.json({
+      success: true,
+      message: `Student ${name} (${student_code}) has been added successfully.`,
+      student: newStudent
+    });
+  } catch (error) {
+    console.error('Error adding new student:', error);
+    res.status(500).json({ message: 'Server error adding new student.' });
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
