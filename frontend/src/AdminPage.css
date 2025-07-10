@@ -655,6 +655,14 @@
   transform: none;
 }
 
+/* 검색 로딩 스타일 */
+.search-loading {
+  padding: 15px;
+  text-align: center;
+  color: #3498db;
+  font-style: italic;
+}
+
 /* 반응형 스타일 */
 @media (max-width: 768px) {
   .admin-page {

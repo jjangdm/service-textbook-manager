@@ -300,6 +300,20 @@ app.post('/api/admin/students', async (req, res) => {
   }
 
   try {
+    // 이름으로 중복 검사 (대소문자 무시)
+    const existingStudentByName = await Student.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('name')),
+        sequelize.fn('LOWER', name.trim())
+      )
+    });
+
+    if (existingStudentByName) {
+      return res.status(400).json({ 
+        message: `Student with name "${name}" already exists with code ${existingStudentByName.student_code}.` 
+      });
+    }
+
     let finalStudentCode = student_code;
     
     // 학생 코드가 제공되지 않은 경우 자동 생성
@@ -335,7 +349,7 @@ app.post('/api/admin/students', async (req, res) => {
 
     // 새 학생 생성
     const newStudent = await Student.create({
-      name,
+      name: name.trim(),
       student_code: finalStudentCode
     });
 

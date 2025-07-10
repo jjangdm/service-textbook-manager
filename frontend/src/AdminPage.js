@@ -11,6 +11,7 @@ function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
   
   // 새 학생 추가 관련
   const [newStudent, setNewStudent] = useState({
@@ -65,8 +66,11 @@ function AdminPage() {
     
     if (query.length < 2) {
       setSearchResults([]);
+      setIsSearching(false);
       return;
     }
+
+    setIsSearching(true);
 
     try {
       const response = await fetch(`/api/admin/students/search?query=${encodeURIComponent(query)}`);
@@ -74,9 +78,14 @@ function AdminPage() {
       
       if (response.ok) {
         setSearchResults(data);
+      } else {
+        setSearchResults([]);
       }
     } catch (error) {
       console.error('학생 검색 오류:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -85,6 +94,7 @@ function AdminPage() {
     setSelectedStudent(student);
     setSearchQuery(`${student.name} (${student.student_code})`);
     setSearchResults([]);
+    setIsSearching(false);
     
     // 선택된 학생의 상세 정보 조회
     try {
@@ -233,6 +243,16 @@ function AdminPage() {
 
   // 검색 결과에서 빠른 학생 추가
   const handleQuickAddStudent = async (studentName) => {
+    // 중복 확인: 이미 검색 결과에 해당 이름이 있는지 확인
+    const existingStudent = searchResults.find(student => 
+      student.name.toLowerCase() === studentName.toLowerCase()
+    );
+    
+    if (existingStudent) {
+      setMessage(`"${studentName}" 학생이 이미 존재합니다. 검색 결과에서 선택해주세요.`);
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
@@ -249,7 +269,8 @@ function AdminPage() {
 
       if (response.ok) {
         setMessage(`학생 "${studentName}" (${data.student.student_code})이(가) 성공적으로 추가되었습니다.`);
-        setShowQuickAddStudent(false);
+        setSearchResults([]);
+        setIsSearching(false);
         // 새로 추가된 학생 자동 선택
         handleStudentSelect(data.student);
       } else {
@@ -395,10 +416,22 @@ function AdminPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => handleStudentSearch(e.target.value)}
+              onFocus={() => {
+                if (selectedStudent) {
+                  setSelectedStudent(null);
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }
+              }}
               placeholder="학생 이름 또는 코드를 입력하세요"
               className="search-input"
             />
-            {searchQuery.length >= 2 && (
+            {isSearching && (
+              <div className="search-results">
+                <div className="search-loading">검색 중...</div>
+              </div>
+            )}
+            {!isSearching && !selectedStudent && searchQuery.length >= 2 && (
               <div className="search-results">
                 {searchResults.length > 0 ? (
                   searchResults.map(student => (
@@ -430,54 +463,55 @@ function AdminPage() {
           </div>
         </div>
 
-        {/* 새 학생 추가 섹션 */}
-        <div className="admin-section">
-          <div className="section-header">
-            <h2>👤 새 학생 추가</h2>
-            <button 
-              onClick={() => setShowAddStudent(!showAddStudent)}
-              className="toggle-button"
-            >
-              {showAddStudent ? '닫기' : '학생 추가'}
-            </button>
+        {/* 새 학생 추가 섹션 - 검색 결과가 없을 때만 표시 */}
+        {!selectedStudent && (
+          <div className="admin-section">
+            <div className="section-header">
+              <h2>👤 새 학생 추가</h2>
+              <button 
+                onClick={() => setShowAddStudent(!showAddStudent)}
+                className="toggle-button"
+              >
+                {showAddStudent ? '닫기' : '학생 추가'}
+              </button>
+            </div>
+            
+            {showAddStudent && (
+              <form onSubmit={handleAddStudent} className="add-student-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>학생 이름:</label>
+                    <input
+                      type="text"
+                      value={newStudent.name}
+                      onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
+                      placeholder="학생 이름을 입력하세요"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>학생 고유번호 (선택사항):</label>
+                    <input
+                      type="text"
+                      value={newStudent.student_code}
+                      onChange={(e) => setNewStudent({...newStudent, student_code: e.target.value})}
+                      placeholder="비워두면 자동 생성됩니다"
+                    />
+                  </div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="add-student-button"
+                  >
+                    {loading ? '추가 중...' : '학생 추가'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
-          
-          {showAddStudent && (
-            <form onSubmit={handleAddStudent} className="add-student-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>학생 이름:</label>
-                  <input
-                    type="text"
-                    value={newStudent.name}
-                    onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
-                    placeholder="학생 이름을 입력하세요"
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>학생 고유번호:</label>
-                  <input
-                    type="text"
-                    value={newStudent.student_code}
-                    onChange={(e) => setNewStudent({...newStudent, student_code: e.target.value})}
-                    placeholder="학생 고유번호를 입력하세요"
-                    required
-                  />
-                </div>
-                
-                <button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="add-student-button"
-                >
-                  {loading ? '추가 중...' : '학생 추가'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
+        )}
 
         {/* 선택된 학생 정보 */}
         {selectedStudent && (
