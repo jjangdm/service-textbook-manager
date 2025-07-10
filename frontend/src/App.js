@@ -30,10 +30,10 @@ function StudentLookup() {
     }
 
     try {
-      const response = await fetch(`/api/student-info?student_code=${studentCode}&name=${studentName}`);
+      const response = await fetch(`http://localhost:5000/api/student-info?student_code=${studentCode}&name=${studentName}`);
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && !data.error) {
         setStudentInfo({
           ...data,
           studentCode: studentCode
@@ -49,6 +49,14 @@ function StudentLookup() {
     }
   };
 
+  // 새로 조회하기 함수
+  const handleNewSearch = () => {
+    setStudentInfo(null);
+    setStudentCode('');
+    setStudentName('');
+    setError('');
+  };
+
   return (
     <div className="app-container">
       <div className="header">
@@ -59,46 +67,58 @@ function StudentLookup() {
         <p className="subtitle">미납/납부 내역을 확인하세요</p>
       </div>
 
-      <div className="card">
-        <form onSubmit={handleSubmit} className="student-form">
-          <div className="form-group">
-            <label className="form-label">학생 이름</label>
-            <input
-              type="text"
-              className="form-input"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              placeholder="이름을 입력하세요"
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">고유번호</label>
-            <input
-              type="text"
-              className="form-input"
-              value={studentCode}
-              onChange={(e) => setStudentCode(e.target.value)}
-              placeholder="고유번호를 입력하세요"
-              required
-            />
-          </div>
+      {/* 학생 정보가 없을 때만 조회 폼 표시 */}
+      {!studentInfo && (
+        <div className="card">
+          <form onSubmit={handleSubmit} className="student-form">
+            <div className="form-group">
+              <label className="form-label">학생 이름</label>
+              <input
+                type="text"
+                className="form-input"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                placeholder="이름을 입력하세요"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">고유번호</label>
+              <input
+                type="text"
+                className="form-input"
+                value={studentCode}
+                onChange={(e) => setStudentCode(e.target.value)}
+                placeholder="고유번호를 입력하세요"
+                required
+              />
+            </div>
 
-          <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? '조회 중...' : '조회하기'}
-          </button>
-        </form>
-      </div>
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? '조회 중...' : '조회하기'}
+            </button>
+          </form>
+        </div>
+      )}
 
       {error && <div className="error-message">{error}</div>}
 
+      {/* 학생 정보가 있을 때 도서 목록과 새로 조회하기 버튼 표시 */}
       {studentInfo && (
         <div className="student-info">
           <div className="student-header">
             <div className="student-name">{studentInfo.studentName} 학생</div>
             <div className="unpaid-total">{studentInfo.totalUnpaidAmount.toLocaleString()}원</div>
             <div className="unpaid-label">미납 총액</div>
+            
+            {/* 새로 조회하기 버튼 */}
+            <button 
+              onClick={handleNewSearch}
+              className="new-search-btn"
+            >
+              🔄 새로 조회하기
+            </button>
           </div>
           
           <div className="book-sections-container">
