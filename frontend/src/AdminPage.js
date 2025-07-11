@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './AdminPage.css';
 
+// API URL 설정
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -65,7 +68,7 @@ function AdminPage() {
     console.log('📊 실제 데이터베이스에서 미납액 조회 시작...');
     
     try {
-      const response = await fetch('http://localhost:5000/api/admin/total-unpaid');
+      const response = await fetch(`${API_URL}/api/admin/total-unpaid`);
       
       if (response.ok) {
         const data = await response.json();
@@ -86,7 +89,7 @@ function AdminPage() {
       
     } catch (error) {
       console.log('💥 백엔드 연결 실패:', error.message);
-      console.log('🔄 백엔드 서버가 실행 중인지 확인하세요 (localhost:5000)');
+      console.log('🔄 백엔드 서버가 실행 중인지 확인하세요 (API URL)');
       
       showMessage('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.', 'error');
       setTotalUnpaidAmount(0);
@@ -106,7 +109,7 @@ function AdminPage() {
     console.log(`🔍 "${query}" 검색 중... (백엔드 API)`);
     
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/students/search?query=${encodeURIComponent(query)}`);
+      const response = await fetch(`${API_URL}/api/admin/students/search?query=${encodeURIComponent(query)}`);
       
       if (response.ok) {
         const students = await response.json();
@@ -135,7 +138,7 @@ function AdminPage() {
     setShowSearchResults(false);
     
     try {
-      const response = await fetch(`http://localhost:5000/api/student-info?student_code=${student.student_code}&name=${student.name}`);
+      const response = await fetch(`${API_URL}/api/student-info?student_code=${student.student_code}&name=${student.name}`);
       const data = await response.json();
       
       if (response.ok && !data.error) {
@@ -184,7 +187,7 @@ function AdminPage() {
     try {
       console.log(`🗑️ 학생 삭제 시도: ${studentName} (ID: ${studentId})`);
 
-      const response = await fetch(`http://localhost:5000/api/admin/students/${studentId}`, {
+      const response = await fetch(`${API_URL}/api/admin/students/${studentId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +253,7 @@ function AdminPage() {
     try {
       console.log(`👤 새 학생 "${studentName}" 추가 중...`);
       
-      const response = await fetch('http://localhost:5000/api/admin/students', {
+      const response = await fetch(`${API_URL}/api/admin/students`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

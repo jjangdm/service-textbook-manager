@@ -13,6 +13,29 @@ dist/
 .env.test.local
 .env.production.local
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+database.sqlite
+mclassbookstore.db
+
+# Backup files
+backup.log
+*.backup
+backups/
+
+# Development files
+debug_data.js
+test_*.js
+check_*.js
+extract_data.py
+check_payment_status.py
+import_data.js
+
+# Archive folder (개발용 파일들)
+archive/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

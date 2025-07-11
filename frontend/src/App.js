@@ -30,7 +30,8 @@ function StudentLookup() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/student-info?student_code=${studentCode}&name=${studentName}`);
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${API_URL}/api/student-info?student_code=${studentCode}&name=${studentName}`);
       const data = await response.json();
 
       if (response.ok && !data.error) {
