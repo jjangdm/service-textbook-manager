@@ -1,0 +1,38 @@
+name: textbook-manager
+services:
+- name: backend
+  source_dir: backend
+  github:
+    repo: jjangdm/service-textbook-manager
+    branch: main
+  run_command: npm start
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: PORT
+    value: "8080"
+  - key: FRONTEND_URL
+    value: ${APP_DOMAIN}
+  http_port: 8080
+
+- name: frontend
+  source_dir: frontend
+  github:
+    repo: jjangdm/service-textbook-manager
+    branch: main
+  build_command: npm run build
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  envs:
+  - key: REACT_APP_API_URL
+    value: ${backend.PUBLIC_URL}
+  http_port: 8080
+  routes:
+  - path: /
+  static_sites:
+  - name: frontend-static
+    source_dir: frontend/build

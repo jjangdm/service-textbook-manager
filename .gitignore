@@ -13,12 +13,14 @@ dist/
 .env.test.local
 .env.production.local
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-database.sqlite
-mclassbookstore.db
+# Database files (개발용만 제외, 배포용은 포함)
+# *.db
+# *.sqlite
+# *.sqlite3
+# database.sqlite
+# mclassbookstore.db
+
+# 임시로 데이터베이스 포함 (배포용)
 
 # Backup files
 backup.log

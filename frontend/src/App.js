@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import AdminPage from './AdminPage';
 
+// API URL 설정
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
 function StudentLookup() {
   const [studentCode, setStudentCode] = useState('');
   const [studentName, setStudentName] = useState('');
@@ -30,7 +33,6 @@ function StudentLookup() {
     }
 
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await fetch(`${API_URL}/api/student-info?student_code=${studentCode}&name=${studentName}`);
       const data = await response.json();
 
