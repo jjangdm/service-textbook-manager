@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AdminPage.css';
 
-// API URL 설정
-const API_URL = '';
 
 function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,6 +10,8 @@ function AdminPage() {
   
   // 전체 시스템 상태
   const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0);
+  const [systemStats, setSystemStats] = useState({});
+  const [apiStatus, setApiStatus] = useState('checking');
   
   // 학생 검색 관련
   const [searchQuery, setSearchQuery] = useState('');
@@ -32,14 +32,31 @@ function AdminPage() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
 
+  // API 연결 테스트
+  const testApiConnection = async () => {
+    try {
+      console.log('🔍 AdminPage API 연결 테스트...');
+      await apiCall('/api/status');
+      setApiStatus('connected');
+      return true;
+    } catch (error) {
+      console.error('❌ AdminPage API 연결 실패:', error);
+      setApiStatus('error');
+      return false;
+    }
+  };
+
   // 관리자 인증
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setAuthError('');
 
-    // 간단한 클라이언트 사이드 인증 (임시)
+    console.log('🔐 관리자 로그인 시도...');
+
+    // 간단한 클라이언트 사이드 인증 체크
     if (password === 'admin123' || password === 'admin') {
+      console.log('✅ 클라이언트 사이드 인증 성공');
       setIsAuthenticated(true);
       localStorage.setItem('adminToken', 'simple-auth-token');
       await fetchTotalUnpaidAmount();
@@ -48,17 +65,13 @@ function AdminPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/login`, {
+      const data = await apiCall('/api/admin/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ password })
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.success) {
+        console.log('✅ 서버 인증 성공');
         setIsAuthenticated(true);
         localStorage.setItem('adminToken', data.token);
         await fetchTotalUnpaidAmount();
@@ -66,7 +79,7 @@ function AdminPage() {
         setAuthError(data.message || '인증에 실패했습니다.');
       }
     } catch (error) {
-      // 백엔드 인증 API가 없는 경우 클라이언트 사이드 인증으로 fallback
+      console.log('💥 서버 인증 실패, 클라이언트 사이드로 fallback');
       if (password === 'admin123' || password === 'admin') {
         setIsAuthenticated(true);
         localStorage.setItem('adminToken', 'fallback-auth-token');
@@ -79,40 +92,35 @@ function AdminPage() {
     }
   };
 
-  // 전체 미납액 조회 (실제 백엔드 API 사용)
+  // 전체 미납액 조회
   const fetchTotalUnpaidAmount = async () => {
-    console.log('📊 실제 데이터베이스에서 미납액 조회 시작...');
+    console.log('📊 총 미납액 조회 시작...');
     
     try {
-      const response = await fetch(`${API_URL}/api/admin/total-unpaid`);
+      const data = await apiCall('/api/admin/total-unpaid');
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ 백엔드 API 응답:', data);
-        
-        if (data.success) {
-          console.log(`💰 총 미납액: ${data.totalUnpaidAmount.toLocaleString()}원`);
-          console.log(`📚 미납 도서: ${data.unpaidBooksCount}권`);
-          console.log(`👥 미납 학생: ${data.studentsWithUnpaidBooks}명`);
-          
-          setTotalUnpaidAmount(data.totalUnpaidAmount);
-          return;
-        }
+      if (data.success) {
+        console.log(`💰 총 미납액: ${data.totalUnpaidAmount.toLocaleString()}원`);
+        setTotalUnpaidAmount(data.totalUnpaidAmount);
+        setSystemStats({
+          unpaidBooksCount: data.unpaidBooksCount,
+          studentsWithUnpaidBooks: data.studentsWithUnpaidBooks,
+          message: data.message
+        });
+        return;
       }
       
-      console.log('❌ API 응답 실패, 상태:', response.status);
-      throw new Error(`API 응답 실패: ${response.status}`);
+      throw new Error(data.message || 'API 응답 실패');
       
     } catch (error) {
-      console.log('💥 백엔드 연결 실패:', error.message);
-      console.log('🔄 백엔드 서버가 실행 중인지 확인하세요 (API URL)');
-      
-      showMessage('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.', 'error');
+      console.error('💥 총 미납액 조회 실패:', error);
+      showMessage('백엔드 서버에 연결할 수 없습니다. 서버 상태를 확인해주세요.', 'error');
       setTotalUnpaidAmount(0);
+      setSystemStats({});
     }
   };
 
-  // 학생 검색 (실제 백엔드 API 사용)
+  // 학생 검색
   const handleStudentSearch = async (query) => {
     setSearchQuery(query);
     
@@ -122,52 +130,40 @@ function AdminPage() {
       return;
     }
 
-    console.log(`🔍 "${query}" 검색 중... (백엔드 API)`);
+    console.log(`🔍 학생 검색: "${query}"`);
     
     try {
-      const response = await fetch(`${API_URL}/api/admin/students/search?query=${encodeURIComponent(query)}`);
+      const students = await apiCall(`/api/admin/students/search?query=${encodeURIComponent(query)}`);
+      console.log(`📋 검색 결과: ${students.length}명`);
       
-      if (response.ok) {
-        const students = await response.json();
-        console.log(`📋 검색 결과: ${students.length}명`);
-        
-        setSearchResults(students);
-        setShowSearchResults(true);
-      } else {
-        console.log(`❌ 학생 검색 실패: ${response.status}`);
-        setSearchResults([]);
-        setShowSearchResults(true);
-      }
+      setSearchResults(students);
+      setShowSearchResults(true);
     } catch (error) {
       console.error('💥 학생 검색 오류:', error);
       setSearchResults([]);
       setShowSearchResults(true);
+      showMessage('학생 검색 중 오류가 발생했습니다.', 'error');
     }
   };
 
   // 학생 선택
   const handleStudentSelect = async (student) => {
-    console.log(`👤 "${student.name}" 학생 선택됨`);
+    console.log(`👤 학생 선택: ${student.name} (${student.student_code})`);
     
     setSelectedStudent(null);
     setSearchQuery(`${student.name} (${student.student_code})`);
     setShowSearchResults(false);
     
     try {
-      const response = await fetch(`${API_URL}/api/student-info?student_code=${student.student_code}&name=${student.name}`);
-      const data = await response.json();
+      const data = await apiCall(
+        `/api/student-info?student_code=${student.student_code}&name=${student.name}`
+      );
       
-      if (response.ok && !data.error) {
-        const studentData = {
-          ...student,
-          ...data
-        };
+      if (!data.error) {
+        const studentData = { ...student, ...data };
         setSelectedStudent(studentData);
-        
         console.log(`💰 ${student.name} 미납액: ${data.totalUnpaidAmount?.toLocaleString() || 0}원`);
-        
       } else {
-        console.log(`❌ 학생 정보 조회 실패:`, data.error || data.message);
         showMessage(`학생 "${student.name}"의 정보를 찾을 수 없습니다.`, 'error');
       }
     } catch (error) {
@@ -178,15 +174,12 @@ function AdminPage() {
 
   // 학생 삭제
   const handleDeleteStudent = async (studentId, studentName) => {
-    // 이중 확인 프롬프트
     const firstConfirm = window.confirm(
       `⚠️ 정말로 "${studentName}" 학생을 삭제하시겠습니까?\n\n` +
       `이 작업은 되돌릴 수 없으며, 해당 학생의 모든 교재 정보도 함께 삭제됩니다.`
     );
 
-    if (!firstConfirm) {
-      return;
-    }
+    if (!firstConfirm) return;
 
     const secondConfirm = window.confirm(
       `🚨 최종 확인\n\n` +
@@ -194,66 +187,41 @@ function AdminPage() {
       `정말 진행하시겠습니까?`
     );
 
-    if (!secondConfirm) {
-      return;
-    }
+    if (!secondConfirm) return;
 
     setLoading(true);
 
     try {
-      console.log(`🗑️ 학생 삭제 시도: ${studentName} (ID: ${studentId})`);
+      console.log(`🗑️ 학생 삭제: ${studentName} (ID: ${studentId})`);
 
-      const response = await fetch(`${API_URL}/api/admin/students/${studentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const data = await apiCall(`/api/admin/students/${studentId}`, {
+        method: 'DELETE'
       });
 
-      console.log(`📡 삭제 API 응답 상태: ${response.status}`);
+      if (data.success || data.deleted) {
+        console.log(`✅ 학생 삭제 성공: ${studentName}`);
+        
+        showMessage(
+          `학생 "${studentName}"이 성공적으로 삭제되었습니다.${data.deletedBooksCount ? ` (${data.deletedBooksCount}권의 교재도 함께 삭제됨)` : ''}`, 
+          'success'
+        );
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`📊 삭제 API 응답 데이터:`, data);
-
-        // 성공 여부를 다양한 방법으로 확인
-        const isSuccess = data.success === true || 
-                         data.deleted === true || 
-                         response.status === 200 ||
-                         data.message?.includes('deleted successfully') ||
-                         data.message?.includes('삭제되었습니다');
-
-        if (isSuccess) {
-          console.log(`✅ 학생 삭제 성공: ${studentName}`);
-          
-          showMessage(
-            `학생 "${studentName}"이 성공적으로 삭제되었습니다.${data.deletedBooksCount ? ` (${data.deletedBooksCount}권의 교재도 함께 삭제됨)` : ''}`, 
-            'success'
-          );
-
-          // 현재 선택된 학생이 삭제된 학생이면 선택 해제
-          if (selectedStudent && (selectedStudent.id === studentId || selectedStudent.id === String(studentId))) {
-            setSelectedStudent(null);
-            setSearchQuery('');
-          }
-
-          // 검색 결과에서도 제거
-          setSearchResults(prev => prev.filter(student => student.id !== studentId && student.id !== String(studentId)));
-
-          // 총 미납액 새로고침
-          await fetchTotalUnpaidAmount();
-
-        } else {
-          console.log(`❌ 학생 삭제 실패:`, data);
-          showMessage(`삭제 실패: ${data.message || '알 수 없는 오류가 발생했습니다.'}`, 'error');
+        // 현재 선택된 학생이 삭제된 학생이면 선택 해제
+        if (selectedStudent && (selectedStudent.id === studentId || selectedStudent.id === String(studentId))) {
+          setSelectedStudent(null);
+          setSearchQuery('');
         }
 
-      } else {
-        console.log(`❌ HTTP 에러: ${response.status}`);
-        const errorData = await response.json().catch(() => ({}));
-        showMessage(`삭제 실패: HTTP ${response.status} - ${errorData.message || '서버 오류'}`, 'error');
-      }
+        // 검색 결과에서도 제거
+        setSearchResults(prev => prev.filter(student => 
+          student.id !== studentId && student.id !== String(studentId)
+        ));
 
+        // 총 미납액 새로고침
+        await fetchTotalUnpaidAmount();
+      } else {
+        showMessage(`삭제 실패: ${data.message || '알 수 없는 오류가 발생했습니다.'}`, 'error');
+      }
     } catch (error) {
       console.error(`💥 학생 삭제 오류:`, error);
       showMessage('네트워크 오류가 발생했습니다. 서버 연결을 확인해주세요.', 'error');
@@ -262,24 +230,19 @@ function AdminPage() {
     }
   };
 
-  // 새 학생 추가 (실제 백엔드 API 사용)
+  // 새 학생 추가
   const handleAddNewStudent = async (studentName) => {
     setLoading(true);
 
     try {
-      console.log(`👤 새 학생 "${studentName}" 추가 중...`);
+      console.log(`👤 새 학생 추가: ${studentName}`);
       
-      const response = await fetch(`${API_URL}/api/admin/students`, {
+      const data = await apiCall('/api/admin/students', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ name: studentName })
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (data.success) {
         console.log(`✅ 학생 추가 성공: ${data.student.name} (${data.student.student_code})`);
         showMessage(`학생 "${studentName}" (${data.student.student_code})이 추가되었습니다.`, 'success');
         
@@ -290,13 +253,11 @@ function AdminPage() {
         
         // 총 미납액 새로고침
         await fetchTotalUnpaidAmount();
-        
       } else {
-        console.log(`❌ 학생 추가 실패:`, data.message);
         showMessage(`오류: ${data.message}`, 'error');
       }
     } catch (error) {
-      console.log(`💥 학생 추가 에러:`, error.message);
+      console.error(`💥 학생 추가 오류:`, error);
       showMessage('네트워크 오류가 발생했습니다.', 'error');
     } finally {
       setLoading(false);
@@ -314,40 +275,22 @@ function AdminPage() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/admin/books/search?query=${encodeURIComponent(value)}`);
-      const data = await response.json();
-      
-      if (response.ok) {
-        setBookSuggestions(data);
-        setShowBookSuggestions(true);
-      }
+      const data = await apiCall(`/api/admin/books/search?query=${encodeURIComponent(value)}`);
+      setBookSuggestions(data);
+      setShowBookSuggestions(true);
     } catch (error) {
-      console.error('교재 검색 오류:', error);
+      console.error('💥 교재 검색 오류:', error);
     }
   };
 
-  // 교재 선택 시 최근 가격 자동 채우기
-  const handleBookSelect = async (book) => {
+  // 교재 선택
+  const handleBookSelect = (book) => {
     setNewBook({
       ...newBook,
       book_name: book.book_name,
       price: book.recent_price || ''
     });
     setShowBookSuggestions(false);
-
-    try {
-      const response = await fetch(`${API_URL}/api/admin/books/price-history?book_name=${encodeURIComponent(book.book_name)}`);
-      const data = await response.json();
-      
-      if (response.ok && data.recent_price) {
-        setNewBook(prev => ({
-          ...prev,
-          price: data.recent_price
-        }));
-      }
-    } catch (error) {
-      console.error('가격 히스토리 조회 오류:', error);
-    }
   };
 
   // 교재 추가
@@ -367,17 +310,12 @@ function AdminPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/students/${selectedStudent.student_code}/books`, {
+      const data = await apiCall(`/api/students/${selectedStudent.student_code}/books`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(newBook)
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data.success !== false) {
         showMessage(`교재 "${newBook.book_name}"이 추가되었습니다.`, 'success');
         setNewBook({
           book_name: '',
@@ -392,6 +330,7 @@ function AdminPage() {
         showMessage(`오류: ${data.message}`, 'error');
       }
     } catch (error) {
+      console.error('💥 교재 추가 오류:', error);
       showMessage('네트워크 오류가 발생했습니다.', 'error');
     } finally {
       setLoading(false);
@@ -408,19 +347,13 @@ function AdminPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/books/${bookId}/mark-paid`, {
+      const data = await apiCall(`/api/books/${bookId}/mark-paid`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ payment_date: paymentDate })
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data.success !== false) {
         showMessage('납부 처리가 완료되었습니다.', 'success');
-        // 학생 정보 새로고침
         if (selectedStudent) {
           await handleStudentSelect(selectedStudent);
         }
@@ -429,6 +362,7 @@ function AdminPage() {
         showMessage(`오류: ${data.message}`, 'error');
       }
     } catch (error) {
+      console.error('💥 납부 처리 오류:', error);
       showMessage('네트워크 오류가 발생했습니다.', 'error');
     } finally {
       setLoading(false);
@@ -451,18 +385,25 @@ function AdminPage() {
     setPassword('');
     setSelectedStudent(null);
     setSearchQuery('');
+    setTotalUnpaidAmount(0);
+    setSystemStats({});
     localStorage.removeItem('adminToken');
   };
 
-  // 페이지 로드 시 토큰 확인
+  // 컴포넌트 마운트 시 초기화
   useEffect(() => {
+    console.log('🚀 AdminPage 컴포넌트 시작');
+    
+    // API 연결 테스트
+    testApiConnection();
+    
+    // 저장된 토큰 확인
     const token = localStorage.getItem('adminToken');
     if (token) {
+      console.log('💾 저장된 토큰 발견, 자동 로그인');
       setIsAuthenticated(true);
-      // 인증 후 미납액 조회
       fetchTotalUnpaidAmount();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 인증 상태 변경시 미납액 조회
@@ -470,7 +411,6 @@ function AdminPage() {
     if (isAuthenticated) {
       fetchTotalUnpaidAmount();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // 검색 결과 외부 클릭 시 닫기
@@ -500,6 +440,24 @@ function AdminPage() {
             <h1 className="admin-login-title">관리자 로그인</h1>
             <p className="admin-login-subtitle">교재 관리 시스템에 접근하려면 인증이 필요합니다</p>
             
+            {/* API 연결 상태 */}
+            <div style={{
+              marginBottom: '20px',
+              padding: '12px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              textAlign: 'center',
+              backgroundColor: apiStatus === 'connected' ? '#e8f5e8' : 
+                              apiStatus === 'error' ? '#fee' : '#f8f9fa',
+              color: apiStatus === 'connected' ? '#27ae60' : 
+                     apiStatus === 'error' ? '#e74c3c' : '#7f8c8d'
+            }}>
+              {apiStatus === 'checking' && '🔍 서버 연결 확인 중...'}
+              {apiStatus === 'connected' && '✅ 서버 연결됨'}
+              {apiStatus === 'error' && '❌ 서버 연결 실패'}
+            </div>
+            
             <form onSubmit={handleLogin} className="admin-login-form">
               <div className="form-group">
                 <label className="form-label">관리자 비밀번호</label>
@@ -510,18 +468,43 @@ function AdminPage() {
                   placeholder="비밀번호를 입력하세요"
                   className="form-input"
                   required
+                  disabled={loading}
                 />
               </div>
               
               {authError && <div className="error-message">{authError}</div>}
               
-              <button type="submit" disabled={loading} className="admin-login-btn">
-                {loading ? '인증 중...' : '로그인'}
+              <button 
+                type="submit" 
+                disabled={loading || apiStatus === 'error'} 
+                className="admin-login-btn"
+              >
+                {loading ? '인증 중...' : 
+                 apiStatus === 'error' ? '서버 연결 대기 중...' : '로그인'}
               </button>
             </form>
             
             <div className="login-info">
               <p>💡 기본 비밀번호: admin123</p>
+              <p style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>
+                API URL: {API_URL}
+              </p>
+              <button 
+                type="button"
+                onClick={testApiConnection}
+                style={{
+                  marginTop: '8px',
+                  padding: '6px 12px',
+                  backgroundColor: '#99cc00',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                연결 테스트
+              </button>
             </div>
           </div>
         </div>
@@ -546,15 +529,46 @@ function AdminPage() {
                   }
                 </span>
               </div>
-              <div style={{fontSize: '12px', color: '#888', marginTop: '5px'}}>
-                학생을 검색하면 미납액이 자동 계산됩니다
+              {systemStats.message && (
+                <div style={{fontSize: '12px', color: '#888', marginTop: '5px'}}>
+                  {systemStats.message}
+                </div>
+              )}
+              
+              {/* API 연결 상태 */}
+              <div style={{
+                fontSize: '12px', 
+                marginTop: '8px',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                display: 'inline-block',
+                backgroundColor: apiStatus === 'connected' ? '#e8f5e8' : '#fee',
+                color: apiStatus === 'connected' ? '#27ae60' : '#e74c3c'
+              }}>
+                {apiStatus === 'connected' ? '✅ 서버 연결됨' : '❌ 서버 연결 실패'}
               </div>
             </div>
             <div style={{display: 'flex', gap: '10px'}}>
               <button 
                 onClick={fetchTotalUnpaidAmount} 
+                disabled={loading}
                 style={{
                   background: '#99cc00', 
+                  color: 'white', 
+                  padding: '8px 16px', 
+                  border: 'none', 
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  opacity: loading ? 0.6 : 1
+                }}
+              >
+                {loading ? '새로고침 중...' : '새로고침'}
+              </button>
+              <button 
+                onClick={testApiConnection}
+                style={{
+                  background: '#3498db', 
                   color: 'white', 
                   padding: '8px 16px', 
                   border: 'none', 
@@ -563,7 +577,7 @@ function AdminPage() {
                   fontSize: '14px'
                 }}
               >
-                새로고침
+                연결 테스트
               </button>
               <button onClick={handleLogout} className="logout-btn">로그아웃</button>
             </div>
@@ -577,6 +591,15 @@ function AdminPage() {
           </div>
         )}
 
+        {/* API 연결 실패 경고 */}
+        {apiStatus === 'error' && (
+          <div className="admin-message error">
+            ⚠️ 서버 연결에 실패했습니다. 일부 기능이 제한될 수 있습니다.
+            <br />API URL: {API_URL}
+            <br />네트워크 연결과 서버 상태를 확인해주세요.
+          </div>
+        )}
+
         {/* 학생 검색 */}
         <div className="admin-card">
           <h2 className="section-title">🔍 학생 검색</h2>
@@ -587,6 +610,7 @@ function AdminPage() {
               onChange={(e) => handleStudentSearch(e.target.value)}
               placeholder="학생 이름 또는 코드를 입력하세요"
               className="search-input"
+              disabled={loading}
             />
             
             {showSearchResults && searchQuery.length >= 2 && (
@@ -705,6 +729,7 @@ function AdminPage() {
                       placeholder="교재명을 입력하세요"
                       className="form-input"
                       required
+                      disabled={loading}
                     />
                     {showBookSuggestions && bookSuggestions.length > 0 && (
                       <div className="book-suggestions">
@@ -733,6 +758,7 @@ function AdminPage() {
                       placeholder="가격을 입력하세요"
                       className="form-input"
                       required
+                      disabled={loading}
                     />
                   </div>
                   
@@ -744,11 +770,16 @@ function AdminPage() {
                       onChange={(e) => setNewBook({...newBook, input_date: e.target.value})}
                       className="form-input"
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
                 
-                <button type="submit" disabled={loading} className="add-book-btn">
+                <button 
+                  type="submit" 
+                  disabled={loading || apiStatus === 'error'} 
+                  className="add-book-btn"
+                >
                   {loading ? '추가 중...' : '교재 추가'}
                 </button>
               </form>
@@ -774,6 +805,7 @@ function AdminPage() {
                           defaultValue={new Date().toISOString().split('T')[0]}
                           className="payment-date-input"
                           id={`payment-date-${book.id}`}
+                          disabled={loading}
                         />
                         <button
                           className="mark-paid-btn"
@@ -783,7 +815,7 @@ function AdminPage() {
                           }}
                           disabled={loading}
                         >
-                          납부완료
+                          {loading ? '처리 중...' : '납부완료'}
                         </button>
                       </div>
                     </div>
@@ -814,6 +846,39 @@ function AdminPage() {
                 </div>
               </div>
             )}
+
+            {/* 교재가 없는 경우 */}
+            {(!selectedStudent.unpaidBooks || selectedStudent.unpaidBooks.length === 0) &&
+             (!selectedStudent.paidBooks || selectedStudent.paidBooks.length === 0) && (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px',
+                color: '#7f8c8d',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '12px',
+                margin: '20px 0'
+              }}>
+                <p>📚 등록된 교재가 없습니다.</p>
+                <p style={{ fontSize: '14px', marginTop: '8px' }}>
+                  위의 교재 지급 섹션에서 새 교재를 추가해주세요.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 디버깅 정보 (개발 환경에서만) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="admin-card" style={{ marginTop: '40px', backgroundColor: '#f8f9fa' }}>
+            <h3 style={{ marginBottom: '15px', color: '#666' }}>🔧 디버깅 정보</h3>
+            <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.5' }}>
+              <p><strong>API URL:</strong> {API_URL}</p>
+              <p><strong>환경:</strong> {process.env.NODE_ENV}</p>
+              <p><strong>호스트:</strong> {window.location.hostname}</p>
+              <p><strong>프로토콜:</strong> {window.location.protocol}</p>
+              <p><strong>API 상태:</strong> {apiStatus}</p>
+              <p><strong>환경변수 REACT_APP_API_URL:</strong> {process.env.REACT_APP_API_URL || '(없음)'}</p>
+            </div>
           </div>
         )}
       </div>
