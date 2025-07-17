@@ -483,7 +483,7 @@ function AdminPage() {
                  apiStatus === 'error' ? '서버 연결 대기 중...' : '로그인'}
               </button>
             </form>
-            
+            /*
             <div className="login-info">
               <p>💡 기본 비밀번호: admin123</p>
               <p style={{ fontSize: '12px', marginTop: '8px', color: '#666' }}>
@@ -506,6 +506,7 @@ function AdminPage() {
                 연결 테스트
               </button>
             </div>
+            */
           </div>
         </div>
       </div>
