@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import AdminPage from './AdminPage';
-
+import { apiCall, testApiConnection, API_URL } from './api';
 
 function StudentLookup() {
   const [studentCode, setStudentCode] = useState('');
