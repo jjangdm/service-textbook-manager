@@ -262,9 +262,9 @@ app.post('/api/admin/login', (req, res) => {
   
   console.log('🔐 관리자 로그인 시도');
   
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'mclass0104';
   
-  if (password === adminPassword || password === 'admin') {
+  if (password === adminPassword || password === 'mclass0104') {
     console.log('✅ 관리자 인증 성공');
     res.json({ 
       success: true, 
