@@ -99,7 +99,7 @@ function StudentLookup() {
         <p className="subtitle">미납/납부 내역을 확인하세요</p>
         
         {/* API 연결 상태 표시 */}
-  /*
+        /*
         <div style={{
           marginTop: '10px',
           padding: '8px 16px',
@@ -115,9 +115,9 @@ function StudentLookup() {
           {apiStatus === 'checking' && '🔍 서버 연결 확인 중...'}
           {apiStatus === 'connected' && '✅ 서버 연결됨'}
           {apiStatus === 'error' && '❌ 서버 연결 실패'}
-        </div>
+        </div> 
+        */
       </div>
-      */
 
       {/* 학생 정보가 없을 때만 조회 폼 표시 */}
       {!studentInfo && (
