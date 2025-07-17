@@ -13,6 +13,7 @@ function StudentLookup() {
   const [apiStatus, setApiStatus] = useState('checking'); // checking, connected, error
 
   // 컴포넌트 마운트 시 API 연결 테스트
+  /*
   useEffect(() => {
     const checkApiConnection = async () => {
       console.log('🚀 StudentLookup 컴포넌트 시작');
@@ -22,6 +23,7 @@ function StudentLookup() {
     
     checkApiConnection();
   }, []);
+  */
 
   const handleSubmit = async (e) => {
     e.preventDefault();
