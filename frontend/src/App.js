@@ -10,7 +10,7 @@ function StudentLookup() {
   const [studentInfo, setStudentInfo] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [apiStatus, setApiStatus] = useState('checking'); // checking, connected, error
+  const [apiStatus, setApiStatus] = useState('connected'); // checking, connected, error
 
   // 컴포넌트 마운트 시 API 연결 테스트
   /*
