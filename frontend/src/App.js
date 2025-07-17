@@ -99,24 +99,6 @@ function StudentLookup() {
         <p className="subtitle">미납/납부 내역을 확인하세요</p>
         
         {/* API 연결 상태 표시 */}
-        /*
-        <div style={{
-          marginTop: '10px',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          fontSize: '12px',
-          fontWeight: '500',
-          display: 'inline-block',
-          backgroundColor: apiStatus === 'connected' ? '#e8f5e8' : 
-                          apiStatus === 'error' ? '#fee' : '#f8f9fa',
-          color: apiStatus === 'connected' ? '#27ae60' : 
-                 apiStatus === 'error' ? '#e74c3c' : '#7f8c8d'
-        }}>
-          {apiStatus === 'checking' && '🔍 서버 연결 확인 중...'}
-          {apiStatus === 'connected' && '✅ 서버 연결됨'}
-          {apiStatus === 'error' && '❌ 서버 연결 실패'}
-        </div> 
-        */
       </div>
 
       {/* 학생 정보가 없을 때만 조회 폼 표시 */}
