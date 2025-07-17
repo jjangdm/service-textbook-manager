@@ -55,7 +55,7 @@ function AdminPage() {
     console.log('🔐 관리자 로그인 시도...');
 
     // 간단한 클라이언트 사이드 인증 체크
-    if (password === 'admin123' || password === 'admin') {
+    if (password === 'mclass0104') {
       console.log('✅ 클라이언트 사이드 인증 성공');
       setIsAuthenticated(true);
       localStorage.setItem('adminToken', 'simple-auth-token');
