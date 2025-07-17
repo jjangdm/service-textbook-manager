@@ -258,7 +258,7 @@ function StudentLookup() {
           <div className="account-info">
             <h3>💳 납부 계좌 안내</h3>
             <div className="account-details">
-              {studentInfo.accountInfo || '신한은행 110-247-214359 장동민(엠클래스수학과학전문학원)'}
+              {studentInfo.accountInfo || '신한 110-247-214359 장동민(엠클래스수학과학전문학원)'}
             </div>
           </div>
         </div>
