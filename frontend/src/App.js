@@ -4,7 +4,7 @@ import './App.css';
 import AdminPage from './AdminPage';
 
 // API URL 설정
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = '';
 
 function StudentLookup() {
   const [studentCode, setStudentCode] = useState('');
