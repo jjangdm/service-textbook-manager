@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AdminPage.css';
-
+import { apiCall, testApiConnection, API_URL } from './api';
 
 function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,12 +33,12 @@ function AdminPage() {
   const [messageType, setMessageType] = useState('');
 
   // API 연결 테스트
-  const testApiConnection = async () => {
+  const testConnection = async () => {
     try {
       console.log('🔍 AdminPage API 연결 테스트...');
-      await apiCall('/api/status');
-      setApiStatus('connected');
-      return true;
+      const isConnected = await testApiConnection();
+      setApiStatus(isConnected ? 'connected' : 'error');
+      return isConnected;
     } catch (error) {
       console.error('❌ AdminPage API 연결 실패:', error);
       setApiStatus('error');
@@ -395,7 +395,7 @@ function AdminPage() {
     console.log('🚀 AdminPage 컴포넌트 시작');
     
     // API 연결 테스트
-    testApiConnection();
+    testConnection();
     
     // 저장된 토큰 확인
     const token = localStorage.getItem('adminToken');
