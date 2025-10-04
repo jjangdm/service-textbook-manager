@@ -540,20 +540,30 @@ app.get('/api/admin/books/search', async (req, res) => {
   }
 
   try {
+    // 1. 검색어와 일치하는 모든 교재를 찾습니다.
     const books = await Book.findAll({
-      attributes: ['book_name', 'price'],
+      attributes: ['book_name', 'price', 'input_date'],
       where: {
         book_name: { [Op.like]: `%${query}%` }
       },
-      group: ['book_name'],
-      order: [['input_date', 'DESC']],
-      limit: 10
+      order: [['input_date', 'DESC']] // 최신순으로 정렬
     });
 
-    const uniqueBooks = books.map(book => ({
-      book_name: book.book_name,
-      recent_price: book.price
-    }));
+    // 2. 교재 이름별로 가장 최신 정보를 저장할 객체를 생성합니다.
+    const uniqueBooksMap = new Map();
+
+    books.forEach(book => {
+      // 3. 아직 맵에 없는 교재 이름이라면, 현재 교재를 최신 정보로 추가합니다.
+      if (!uniqueBooksMap.has(book.book_name)) {
+        uniqueBooksMap.set(book.book_name, {
+          book_name: book.book_name,
+          recent_price: book.price
+        });
+      }
+    });
+
+    // 4. 맵의 값들을 배열로 변환하여 결과로 반환합니다.
+    const uniqueBooks = Array.from(uniqueBooksMap.values()).slice(0, 10);
 
     res.json(uniqueBooks);
   } catch (error) {
@@ -592,8 +602,12 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다!`);
-  console.log(`🌐 환경: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📍 URL: http://0.0.0.0:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다!`);
+    console.log(`🌐 환경: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`📍 URL: http://0.0.0.0:${PORT}`);
+  });
+}
+
+module.exports = app;
