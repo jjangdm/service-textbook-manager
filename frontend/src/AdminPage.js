@@ -379,7 +379,7 @@ function AdminPage() {
     }, 5000);
   };
 
-  // 데이터 백업
+  // 데이터 백업 (JSON)
   const handleBackup = async () => {
     console.log('💾 데이터 백업 시작...');
     setLoading(true);
@@ -421,6 +421,127 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // CSV 내보내기
+  const handleCsvExport = async () => {
+    console.log('📊 CSV 내보내기 시작...');
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/export-csv`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`CSV 내보내기 실패: ${response.status}`);
+      }
+
+      // Blob으로 변환
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `textbook_export_${new Date().toISOString().split('T')[0]}_${Date.now()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log('✅ CSV 내보내기 완료');
+      showMessage('CSV 파일이 다운로드되었습니다.', 'success');
+
+    } catch (error) {
+      console.error('💥 CSV 내보내기 실패:', error);
+      showMessage('CSV 내보내기 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 데이터 복원
+  const handleRestoreFile = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    console.log(`♻️ 데이터 복원 시작: ${file.name}`);
+
+    // 사용자 확인
+    const firstConfirm = window.confirm(
+      `⚠️ 데이터 복원 경고\n\n` +
+      `현재 저장된 모든 데이터가 삭제되고 백업 파일의 데이터로 대체됩니다.\n` +
+      `이 작업은 되돌릴 수 없습니다.\n\n` +
+      `정말 진행하시겠습니까?`
+    );
+
+    if (!firstConfirm) {
+      event.target.value = ''; // 파일 선택 초기화
+      return;
+    }
+
+    const secondConfirm = window.confirm(
+      `🚨 최종 확인\n\n` +
+      `모든 데이터가 영구적으로 삭제되고 백업 파일로 대체됩니다.\n` +
+      `계속하시겠습니까?`
+    );
+
+    if (!secondConfirm) {
+      event.target.value = ''; // 파일 선택 초기화
+      return;
+    }
+
+    setLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const backupData = JSON.parse(e.target.result);
+
+        console.log(`📦 백업 파일 내용: 학생 ${backupData.total_students}명, 교재 ${backupData.total_books}권`);
+
+        const response = await fetch(`${API_URL}/api/admin/restore`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(backupData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log(`✅ 복원 완료: 학생 ${data.restored.students}명, 교재 ${data.restored.books}권`);
+          showMessage(
+            `복원 완료! 학생 ${data.restored.students}명, 교재 ${data.restored.books}권이 복원되었습니다.`,
+            'success'
+          );
+
+          // 데이터 새로고침
+          await fetchTotalUnpaidAmount();
+          setSelectedStudent(null);
+          setSearchQuery('');
+          setSearchResults([]);
+        } else {
+          showMessage(`복원 실패: ${data.message}`, 'error');
+        }
+
+      } catch (error) {
+        console.error('💥 복원 실패:', error);
+        showMessage('백업 파일을 읽거나 복원하는 중 오류가 발생했습니다.', 'error');
+      } finally {
+        setLoading(false);
+        event.target.value = ''; // 파일 선택 초기화
+      }
+    };
+
+    reader.onerror = () => {
+      console.error('💥 파일 읽기 실패');
+      showMessage('파일을 읽을 수 없습니다.', 'error');
+      setLoading(false);
+      event.target.value = ''; // 파일 선택 초기화
+    };
+
+    reader.readAsText(file);
   };
 
   // 로그아웃
@@ -629,22 +750,57 @@ function AdminPage() {
                 onMouseOut={(e) => e.target.style.background = '#9b59b6'}
                 title="전체 데이터를 JSON 파일로 백업합니다"
               >
-                {loading ? '백업 중...' : '💾 데이터 백업'}
+                {loading ? '백업 중...' : '💾 JSON 백업'}
               </button>
               <button
-                onClick={testApiConnection}
+                onClick={handleCsvExport}
+                disabled={loading}
                 style={{
-                  background: '#3498db',
+                  background: '#27ae60',
                   color: 'white',
                   padding: '8px 16px',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  opacity: loading ? 0.6 : 1,
+                  transition: 'all 0.3s ease'
                 }}
+                onMouseOver={(e) => !loading && (e.target.style.background = '#229954')}
+                onMouseOut={(e) => e.target.style.background = '#27ae60'}
+                title="학생 및 교재 데이터를 CSV 파일로 내보냅니다"
               >
-                연결 테스트
+                {loading ? '내보내는 중...' : '📊 CSV 내보내기'}
               </button>
+              <button
+                onClick={() => document.getElementById('restore-file-input').click()}
+                disabled={loading}
+                style={{
+                  background: '#e67e22',
+                  color: 'white',
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  opacity: loading ? 0.6 : 1,
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => !loading && (e.target.style.background = '#d35400')}
+                onMouseOut={(e) => e.target.style.background = '#e67e22'}
+                title="백업 파일로부터 데이터를 복원합니다"
+              >
+                {loading ? '복원 중...' : '♻️ 데이터 복원'}
+              </button>
+              <input
+                type="file"
+                id="restore-file-input"
+                accept=".json"
+                style={{ display: 'none' }}
+                onChange={handleRestoreFile}
+              />
               <button onClick={handleLogout} className="logout-btn">로그아웃</button>
             </div>
           </div>
