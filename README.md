@@ -128,6 +128,8 @@ npm start
 3. `npm install`이 정상적으로 완료되었는지 확인
 4. 데이터 임포트가 완료되었는지 확인
 
+**상세한 문제 해결 방법은 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)를 참조하세요.**
+
 ## 데이터베이스 스키마
 
 ### Students 테이블
@@ -143,3 +145,32 @@ npm start
 - checking: 납부 여부 (boolean)
 - payment_date: 수납일
 - studentId: 학생 ID (외래키)
+
+---
+
+## 📚 추가 문서
+
+프로젝트 관련 추가 문서:
+
+- **[CHANGELOG.md](./CHANGELOG.md)** - 변경 이력 및 업데이트 내역
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - 문제 해결 가이드
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - 배포 가이드 (Vercel, Netlify, VPS, Docker)
+- **[DIGITALOCEAN_DEPLOY.md](./DIGITALOCEAN_DEPLOY.md)** - DigitalOcean 배포 방법
+- **[DIGITALOCEAN_DEBUG.md](./DIGITALOCEAN_DEBUG.md)** - DigitalOcean 환경 변수 설정
+
+---
+
+## 📧 문의 및 기여
+
+- **Issues**: 버그 리포트 및 기능 요청은 [GitHub Issues](https://github.com/jjangdm/service-textbook-manager/issues)에 제출해주세요.
+- **Pull Requests**: 기여는 언제나 환영합니다!
+
+---
+
+## 📄 라이선스
+
+이 프로젝트는 교육 목적으로 개발되었습니다.
+
+---
+
+**마지막 업데이트**: 2025-12-07
