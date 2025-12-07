@@ -379,6 +379,50 @@ function AdminPage() {
     }, 5000);
   };
 
+  // 데이터 백업
+  const handleBackup = async () => {
+    console.log('💾 데이터 백업 시작...');
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/admin/backup`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`백업 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // JSON 파일로 다운로드
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `textbook_backup_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log(`✅ 백업 완료: 학생 ${data.total_students}명, 교재 ${data.total_books}권`);
+      showMessage(
+        `백업 완료! 학생 ${data.total_students}명, 교재 ${data.total_books}권이 저장되었습니다.`,
+        'success'
+      );
+
+    } catch (error) {
+      console.error('💥 백업 실패:', error);
+      showMessage('백업 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 로그아웃
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -550,29 +594,50 @@ function AdminPage() {
               </div>
             </div>
             <div style={{display: 'flex', gap: '10px'}}>
-              <button 
-                onClick={fetchTotalUnpaidAmount} 
+              <button
+                onClick={fetchTotalUnpaidAmount}
                 disabled={loading}
                 style={{
-                  background: '#99cc00', 
-                  color: 'white', 
-                  padding: '8px 16px', 
-                  border: 'none', 
+                  background: '#99cc00',
+                  color: 'white',
+                  padding: '8px 16px',
+                  border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px',
                   opacity: loading ? 0.6 : 1
                 }}
               >
-                {loading ? '새로고침 중...' : '새로고침'}
+                {loading ? '새로고침 중...' : '🔄 새로고침'}
               </button>
-              <button 
+              <button
+                onClick={handleBackup}
+                disabled={loading}
+                style={{
+                  background: '#9b59b6',
+                  color: 'white',
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  opacity: loading ? 0.6 : 1,
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => !loading && (e.target.style.background = '#8e44ad')}
+                onMouseOut={(e) => e.target.style.background = '#9b59b6'}
+                title="전체 데이터를 JSON 파일로 백업합니다"
+              >
+                {loading ? '백업 중...' : '💾 데이터 백업'}
+              </button>
+              <button
                 onClick={testApiConnection}
                 style={{
-                  background: '#3498db', 
-                  color: 'white', 
-                  padding: '8px 16px', 
-                  border: 'none', 
+                  background: '#3498db',
+                  color: 'white',
+                  padding: '8px 16px',
+                  border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontSize: '14px'

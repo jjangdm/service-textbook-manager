@@ -536,7 +536,7 @@ app.put('/api/books/:id/mark-paid', async (req, res) => {
 // 교재 검색 (자동완성)
 app.get('/api/admin/books/search', async (req, res) => {
   const { query } = req.query;
-  
+
   if (!query || query.length < 2) {
     return res.json([]);
   }
@@ -570,9 +570,69 @@ app.get('/api/admin/books/search', async (req, res) => {
     res.json(uniqueBooks);
   } catch (error) {
     console.error('💥 교재 검색 오류:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error searching books.',
-      error: error.message 
+      error: error.message
+    });
+  }
+});
+
+// 데이터 백업 (전체 데이터 내보내기)
+app.get('/api/admin/backup', async (req, res) => {
+  console.log('💾 데이터 백업 요청...');
+
+  try {
+    // 모든 학생과 해당 학생의 책 정보를 가져옵니다
+    const students = await Student.findAll({
+      include: [{
+        model: Book,
+        order: [['input_date', 'DESC']]
+      }],
+      order: [['name', 'ASC']]
+    });
+
+    const backupData = {
+      backup_date: new Date().toISOString(),
+      backup_timestamp: Date.now(),
+      total_students: students.length,
+      total_books: students.reduce((sum, student) => sum + student.Books.length, 0),
+      data: {
+        students: students.map(student => ({
+          id: student.id,
+          name: student.name,
+          student_code: student.student_code,
+          books: student.Books.map(book => ({
+            id: book.id,
+            input_date: book.input_date,
+            book_name: book.book_name,
+            price: book.price,
+            checking: book.checking,
+            payment_date: book.payment_date
+          }))
+        }))
+      },
+      metadata: {
+        version: '1.0',
+        system: '교재 관리 시스템',
+        format: 'JSON'
+      }
+    };
+
+    console.log(`✅ 백업 완료: 학생 ${backupData.total_students}명, 교재 ${backupData.total_books}권`);
+
+    // JSON 파일로 다운로드
+    const filename = `textbook_backup_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.json(backupData);
+
+  } catch (error) {
+    console.error('💥 데이터 백업 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Backup failed',
+      message: '데이터 백업 중 오류가 발생했습니다.',
+      details: error.message
     });
   }
 });
