@@ -5,6 +5,9 @@ const { Op } = require('sequelize');
 const sequelize = require('./config/database');
 const Student = require('./models/student');
 const Book = require('./models/book');
+const cron = require('node-cron');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -536,7 +539,7 @@ app.put('/api/books/:id/mark-paid', async (req, res) => {
 // 교재 검색 (자동완성)
 app.get('/api/admin/books/search', async (req, res) => {
   const { query } = req.query;
-  
+
   if (!query || query.length < 2) {
     return res.json([]);
   }
@@ -570,9 +573,238 @@ app.get('/api/admin/books/search', async (req, res) => {
     res.json(uniqueBooks);
   } catch (error) {
     console.error('💥 교재 검색 오류:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error searching books.',
-      error: error.message 
+      error: error.message
+    });
+  }
+});
+
+// 데이터 백업 (전체 데이터 내보내기 - JSON)
+app.get('/api/admin/backup', async (req, res) => {
+  console.log('💾 데이터 백업 요청...');
+
+  try {
+    // 모든 학생과 해당 학생의 책 정보를 가져옵니다
+    const students = await Student.findAll({
+      include: [{
+        model: Book,
+        order: [['input_date', 'DESC']]
+      }],
+      order: [['name', 'ASC']]
+    });
+
+    const backupData = {
+      backup_date: new Date().toISOString(),
+      backup_timestamp: Date.now(),
+      total_students: students.length,
+      total_books: students.reduce((sum, student) => sum + student.Books.length, 0),
+      data: {
+        students: students.map(student => ({
+          id: student.id,
+          name: student.name,
+          student_code: student.student_code,
+          books: student.Books.map(book => ({
+            id: book.id,
+            input_date: book.input_date,
+            book_name: book.book_name,
+            price: book.price,
+            checking: book.checking,
+            payment_date: book.payment_date
+          }))
+        }))
+      },
+      metadata: {
+        version: '1.0',
+        system: '교재 관리 시스템',
+        format: 'JSON'
+      }
+    };
+
+    console.log(`✅ 백업 완료: 학생 ${backupData.total_students}명, 교재 ${backupData.total_books}권`);
+
+    // JSON 파일로 다운로드
+    const filename = `textbook_backup_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.json(backupData);
+
+  } catch (error) {
+    console.error('💥 데이터 백업 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Backup failed',
+      message: '데이터 백업 중 오류가 발생했습니다.',
+      details: error.message
+    });
+  }
+});
+
+// CSV 내보내기
+app.get('/api/admin/export-csv', async (req, res) => {
+  console.log('📊 CSV 내보내기 요청...');
+
+  try {
+    // 모든 학생과 책 정보 가져오기
+    const students = await Student.findAll({
+      include: [{
+        model: Book,
+        order: [['input_date', 'DESC']]
+      }],
+      order: [['name', 'ASC']]
+    });
+
+    // CSV 헤더
+    const csvHeaders = [
+      '학생명',
+      '학생코드',
+      '교재명',
+      '가격',
+      '지급일',
+      '납부여부',
+      '납부일'
+    ];
+
+    // CSV 데이터 생성
+    const csvRows = [];
+    csvRows.push(csvHeaders.join(','));
+
+    students.forEach(student => {
+      if (student.Books.length === 0) {
+        // 교재가 없는 학생도 표시
+        csvRows.push([
+          `"${student.name}"`,
+          `"${student.student_code}"`,
+          '',
+          '',
+          '',
+          '',
+          ''
+        ].join(','));
+      } else {
+        student.Books.forEach(book => {
+          csvRows.push([
+            `"${student.name}"`,
+            `"${student.student_code}"`,
+            `"${book.book_name}"`,
+            book.price || 0,
+            `"${book.input_date || ''}"`,
+            book.checking ? '납부완료' : '미납',
+            `"${book.payment_date || ''}"`
+          ].join(','));
+        });
+      }
+    });
+
+    const csvContent = csvRows.join('\n');
+    const totalBooks = students.reduce((sum, student) => sum + student.Books.length, 0);
+
+    console.log(`✅ CSV 내보내기 완료: 학생 ${students.length}명, 교재 ${totalBooks}권`);
+
+    // CSV 파일로 다운로드 (UTF-8 BOM 추가로 한글 깨짐 방지)
+    const filename = `textbook_export_${new Date().toISOString().split('T')[0]}_${Date.now()}.csv`;
+    const bom = '\uFEFF'; // UTF-8 BOM
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(bom + csvContent);
+
+  } catch (error) {
+    console.error('💥 CSV 내보내기 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: 'CSV export failed',
+      message: 'CSV 내보내기 중 오류가 발생했습니다.',
+      details: error.message
+    });
+  }
+});
+
+// 데이터 복원
+app.post('/api/admin/restore', async (req, res) => {
+  console.log('♻️ 데이터 복원 요청...');
+
+  try {
+    const backupData = req.body;
+
+    // 백업 데이터 유효성 검증
+    if (!backupData || !backupData.data || !backupData.data.students) {
+      return res.status(400).json({
+        success: false,
+        message: '올바르지 않은 백업 파일 형식입니다.'
+      });
+    }
+
+    console.log(`📦 백업 데이터: 학생 ${backupData.total_students}명, 교재 ${backupData.total_books}권`);
+
+    // 트랜잭션 시작
+    const transaction = await sequelize.transaction();
+
+    try {
+      // 기존 데이터 삭제 (주의!)
+      await Book.destroy({ where: {}, transaction });
+      await Student.destroy({ where: {}, transaction });
+
+      console.log('🗑️ 기존 데이터 삭제 완료');
+
+      let studentsCreated = 0;
+      let booksCreated = 0;
+
+      // 학생 및 교재 데이터 복원
+      for (const studentData of backupData.data.students) {
+        const student = await Student.create({
+          name: studentData.name,
+          student_code: studentData.student_code
+        }, { transaction });
+
+        studentsCreated++;
+
+        // 해당 학생의 교재 복원
+        for (const bookData of studentData.books) {
+          await Book.create({
+            input_date: bookData.input_date,
+            book_name: bookData.book_name,
+            price: bookData.price,
+            checking: bookData.checking,
+            payment_date: bookData.payment_date,
+            studentId: student.id
+          }, { transaction });
+
+          booksCreated++;
+        }
+      }
+
+      // 트랜잭션 커밋
+      await transaction.commit();
+
+      console.log(`✅ 데이터 복원 완료: 학생 ${studentsCreated}명, 교재 ${booksCreated}권`);
+
+      res.json({
+        success: true,
+        message: '데이터가 성공적으로 복원되었습니다.',
+        restored: {
+          students: studentsCreated,
+          books: booksCreated
+        },
+        backup_info: {
+          backup_date: backupData.backup_date,
+          original_students: backupData.total_students,
+          original_books: backupData.total_books
+        }
+      });
+
+    } catch (error) {
+      // 트랜잭션 롤백
+      await transaction.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('💥 데이터 복원 오류:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Restore failed',
+      message: '데이터 복원 중 오류가 발생했습니다.',
+      details: error.message
     });
   }
 });
@@ -604,11 +836,96 @@ app.use((req, res) => {
   });
 });
 
+// 자동 백업 함수
+async function createAutoBackup() {
+  try {
+    console.log('🕐 자동 백업 시작...');
+
+    const students = await Student.findAll({
+      include: [{
+        model: Book,
+        order: [['input_date', 'DESC']]
+      }],
+      order: [['name', 'ASC']]
+    });
+
+    const backupData = {
+      backup_date: new Date().toISOString(),
+      backup_timestamp: Date.now(),
+      backup_type: 'automatic_weekly',
+      total_students: students.length,
+      total_books: students.reduce((sum, student) => sum + student.Books.length, 0),
+      data: {
+        students: students.map(student => ({
+          id: student.id,
+          name: student.name,
+          student_code: student.student_code,
+          books: student.Books.map(book => ({
+            id: book.id,
+            input_date: book.input_date,
+            book_name: book.book_name,
+            price: book.price,
+            checking: book.checking,
+            payment_date: book.payment_date
+          }))
+        }))
+      },
+      metadata: {
+        version: '1.0',
+        system: '교재 관리 시스템',
+        format: 'JSON'
+      }
+    };
+
+    // backups 디렉토리가 없으면 생성
+    const backupsDir = path.join(__dirname, 'backups');
+    if (!fs.existsSync(backupsDir)) {
+      fs.mkdirSync(backupsDir, { recursive: true });
+    }
+
+    // 백업 파일 저장
+    const filename = `auto_backup_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
+    const filepath = path.join(backupsDir, filename);
+    fs.writeFileSync(filepath, JSON.stringify(backupData, null, 2));
+
+    console.log(`✅ 자동 백업 완료: ${filename}`);
+    console.log(`📊 학생 ${backupData.total_students}명, 교재 ${backupData.total_books}권`);
+
+    // 오래된 백업 파일 삭제 (30일 이상)
+    const files = fs.readdirSync(backupsDir);
+    const now = Date.now();
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+
+    files.forEach(file => {
+      if (file.startsWith('auto_backup_')) {
+        const filePath = path.join(backupsDir, file);
+        const stats = fs.statSync(filePath);
+        if (stats.mtimeMs < thirtyDaysAgo) {
+          fs.unlinkSync(filePath);
+          console.log(`🗑️ 오래된 백업 삭제: ${file}`);
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('💥 자동 백업 실패:', error);
+  }
+}
+
+// 자동 백업 스케줄 설정 (매주 일요일 오전 3시)
+cron.schedule('0 3 * * 0', () => {
+  console.log('⏰ 주간 자동 백업 트리거');
+  createAutoBackup();
+}, {
+  timezone: "Asia/Seoul"
+});
+
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다!`);
     console.log(`🌐 환경: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📍 URL: http://0.0.0.0:${PORT}`);
+    console.log(`⏰ 자동 백업: 매주 일요일 오전 3시 (Asia/Seoul)`);
   });
 }
 
