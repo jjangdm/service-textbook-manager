@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 5000;
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://mclass.store',
-  'https://www.mclass.store',
+  'https://mclass.shop',
+  'https://www.mclass.shop',
   process.env.FRONTEND_URL, // 환경변수에서 가져온 URL
 ].filter(Boolean); // undefined 제거
 

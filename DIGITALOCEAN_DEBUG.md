@@ -5,9 +5,9 @@
 ### .env 파일 생성 (frontend 폴더에)
 ```bash
 # frontend/.env
-REACT_APP_API_URL=http://mclass.store:5000
+REACT_APP_API_URL=http://mclass.shop:5000
 # 또는 프로덕션에서 같은 도메인을 사용한다면:
-# REACT_APP_API_URL=http://mclass.store
+# REACT_APP_API_URL=http://mclass.shop
 ```
 
 ### 빌드 시 환경변수 확인
@@ -24,7 +24,7 @@ npm run build
 # backend/.env
 NODE_ENV=production
 PORT=5000
-FRONTEND_URL=http://mclass.store
+FRONTEND_URL=http://mclass.shop
 ```
 
 ## 3. nginx 설정 (만약 nginx를 사용중이라면)
@@ -33,7 +33,7 @@ FRONTEND_URL=http://mclass.store
 ```nginx
 server {
     listen 80;
-    server_name mclass.store;
+    server_name mclass.shop;
     
     # 프론트엔드 정적 파일
     location / {
